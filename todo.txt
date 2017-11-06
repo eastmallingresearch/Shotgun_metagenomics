@@ -6,6 +6,6 @@
 3. Gene prediction
   3.1 blast (megan)
   3.2 ab initio 
-4 Asses speies diveristy + other statistical analyses
+4 Assess species diveristy + other statistical analyses
 Choose best pipeline
 Possibly mix of Megan for BLAST search against known 
