@@ -3,7 +3,8 @@ DUST (NCBI - part of BLAST+)
 Taxonomic assignment:
 Kraken - https://ccb.jhu.edu/software/kraken/
 ... pseudo alignment (and  quantification)?
-... here we go - https://academic.oup.com/bioinformatics/article-abstract/33/14/2082/3038398?redirectedFrom=fulltext
+... here we go - based on kallisto https://academic.oup.com/bioinformatics/article-abstract/33/14/2082/3038398?redirectedFrom=fulltext
+https://github.com/pachterlab/metakallisto
 Abundance estimation:
 Bracken - https://ccb.jhu.edu/software/bracken/
 
