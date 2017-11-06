@@ -1,0 +1,8 @@
+Low compexity filter:
+DUST (NCBI - part of BLAST+)
+Taxonomic assignment:
+Kraken - https://ccb.jhu.edu/software/kraken/
+Abundance estimation:
+Bracken - https://ccb.jhu.edu/software/bracken/
+
+
