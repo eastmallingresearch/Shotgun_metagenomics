@@ -1,4 +1,4 @@
-1. Filter data
+1. Filter data/preprocessing
   1.1 Redundancy reduction (if necessary)
   1.2 Remove bacterial or eukaryote DNA depeding on pathway
   1.3 Quality filter
