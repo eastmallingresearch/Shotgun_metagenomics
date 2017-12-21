@@ -1,3 +1,5 @@
+Preprocessing - BBtools (JGI)
+
 Low compexity filter:
 DUST (NCBI - part of BLAST+)
 Taxonomic assignment:
