@@ -52,7 +52,6 @@ for FR in $PROJECT_FOLDER/data/filtered/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz; 
   $PROJECT_FOLDER/data/cleaned \
   $FR \
   $RR \
-  bbmap.sh \
   minid=0.95 \
   maxindel=3 \
   bwr=0.16 \
