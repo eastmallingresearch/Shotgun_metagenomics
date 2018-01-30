@@ -64,7 +64,6 @@ done
 ```
 ### Normalization and error correction (BBNorm)
 ```shell
-# normalition and error correction
 for FR in $PROJECT_FOLDER/data/cleaned/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cleaned.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
   $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c normalise -p bbnorm \
@@ -78,6 +77,19 @@ for FR in $PROJECT_FOLDER/data/cleaned/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cl
   bits=16 prefilter
 done
 ```
-### paired read merge (BBMerge/USEARCH)
+### Paired read merge (BBMerge)
+```shell
+for FR in $PROJECT_FOLDER/data/cleaned/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cleaned.fq.gz.corrected.fq.gz; do
+  RR=$(sed 's/_1/_2/' <<< $FR)
+  $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c merge -p bbmerge-auto \
+  $PROJECT_FOLDER/data/merged \
+  $FR \
+  $RR  \
+  rem k=62 \
+  extend2=50 \
+  t=12 \
+  vstrict
+done
+```
 
 ### Quality check (BLASTn)
