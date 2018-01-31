@@ -1,6 +1,9 @@
 # Shotgun_metagenomics
 
 ## Preprocessing
+The workflow should include at the least adapter trimming and filtering for phix/contamination. Normalisation, error correction and merging are dependent on the data and/or the assebley pipeline. Trimmomatic can also trim for quality if the data is of poor quality.
+
+The bbtools preprocessing pipeline has a number of good options for many of these tasks.
 
 ```shell
 # add project folders
@@ -16,7 +19,7 @@ mkdir $PROJECT_FOLDER/data/merged
 ```
 
 
-### Adapter trimming (trimmomatic)
+### Adapter trimming (trimmomatic - extra command line options, e.g. quality trimming, will be passed to trimmomatic)
 Edit the *FR* and the sed to the required format
 ```shell
 for FR in $PROJECT_FOLDER/data/fastq/*_1.fq.gz; do
@@ -29,7 +32,7 @@ for FR in $PROJECT_FOLDER/data/fastq/*_1.fq.gz; do
   4
 done
 ```
-### Synthetic construct/contaminant filtering (BBduc/bowtie)
+### Synthetic construct/contaminant filtering (BBduc)
 ```shell
 for FR in $PROJECT_FOLDER/data/trimmed/*_1.fq.gz.trimmed.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
@@ -92,4 +95,4 @@ for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.
 done
 ```
 
-### Quality check (BLASTn)
+## Assembly
