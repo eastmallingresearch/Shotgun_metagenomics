@@ -116,6 +116,7 @@ for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.
   $RR  \
   $PREFIX \
   -k 21,33,55,77
+done
 ```
 
 
