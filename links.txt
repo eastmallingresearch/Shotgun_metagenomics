@@ -1,5 +1,9 @@
 Preprocessing - BBtools (JGI)
 
+assembly
+This is a decent review of potential assembly tools
+http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0169662
+
 Low compexity filter:
 DUST (NCBI - part of BLAST+)
 Taxonomic assignment:
