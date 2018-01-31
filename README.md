@@ -95,4 +95,27 @@ for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.
 done
 ```
 
+# output can be catted to form a 
+```shell
+
+```
+
+
 ## Assembly
+metaspades and megahit are two decent options
+
+### metaspades
+Metaspades can only run on paired reads (no option to use single and/or merged pairs, or multiple libraries)
+```shell
+for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cleaned.fq.gz.corrected.fq.gz; do
+  RR=$(sed 's/_1/_2/' <<< $FR)
+  PREFIX=$(grep -Po 'N[0-9]+.' <<<$FR)
+  $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c assemble -p metaspades \
+  $PROJECT_FOLDER/data/assembled \
+  $FR \
+  $RR  \
+  $PREFIX \
+  -k 21,33,55,77
+```
+
+
