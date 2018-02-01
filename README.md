@@ -106,6 +106,7 @@ metaspades and megahit are two decent options
 
 ### metaspades
 Metaspades can only run on paired reads (no option to use single and/or merged pairs, or multiple libraries)
+Also doesn't accept compressed 
 ```shell
 for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cleaned.fq.gz.corrected.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
@@ -119,4 +120,35 @@ for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.
 done
 ```
 
+### megahit
+Several options are recommended for soil samples
+--k-min=27 (or higher)
+--kmin-1pass
+--k-min 27 --k-step 10 --k-max 87 (127)
+```shell
+# using pre-merged reads
+for FR in $PROJECT_FOLDER/data/merged/*_1.unmerged.fq.gz; do
+  RR=$(sed 's/_1/_2/' <<< $FR)
+  MR=$(sed 's/_1\.un/\./' <<< $FR)
+  PREFIX=$(grep -Po 'N[0-9]+.' <<<$FR)
+  $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c assemble -p megahit \
+  $PROJECT_FOLDER/data/assembled \
+  $PREFIX \
+  -r $MR,$FR,$RR\
+  -k-min=27 --k-step 10 --k-max 127
+done
+```
 
+```shell
+# using unmerged reads
+for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cleaned.fq.gz.corrected.fq.gz; do
+  RR=$(sed 's/_1/_2/' <<< $FR)
+  MR=$(sed 's/_1\.un/\./' <<< $FR)
+  PREFIX=$(grep -Po 'N[0-9]+.' <<<$FR)
+  $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c assemble -p megahit \
+  $PROJECT_FOLDER/data/assembled \
+  $PREFIX \
+ -1 $FR -2 $RR -r $MR \
+ -k-min=27 --k-step 10 --k-max 127
+done
+```   
