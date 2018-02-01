@@ -19,7 +19,7 @@ mkdir $PROJECT_FOLDER/data/merged
 ```
 
 
-### Adapter trimming (trimmomatic - extra command line options, e.g. quality trimming, will be passed to trimmomatic)
+#### Adapter trimming (trimmomatic - extra command line options, e.g. quality trimming, will be passed to trimmomatic)
 Edit the *FR* and the sed to the required format
 ```shell
 for FR in $PROJECT_FOLDER/data/fastq/*_1.fq.gz; do
@@ -32,7 +32,7 @@ for FR in $PROJECT_FOLDER/data/fastq/*_1.fq.gz; do
   4
 done
 ```
-### Synthetic construct/contaminant filtering (BBduc)
+#### Synthetic construct/contaminant filtering (BBduc)
 ```shell
 for FR in $PROJECT_FOLDER/data/trimmed/*_1.fq.gz.trimmed.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
@@ -46,7 +46,7 @@ for FR in $PROJECT_FOLDER/data/trimmed/*_1.fq.gz.trimmed.fq.gz; do
 done
 ```
 
-### Human contaminant removal (BBMap)
+#### Human contaminant removal (BBMap)
 ```shell
 for FR in $PROJECT_FOLDER/data/filtered/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
@@ -65,7 +65,7 @@ for FR in $PROJECT_FOLDER/data/filtered/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz; 
   t=8
 done
 ```
-### Normalization and error correction (BBNorm)
+#### Normalization and error correction (BBNorm)
 ```shell
 for FR in $PROJECT_FOLDER/data/cleaned/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cleaned.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
@@ -80,7 +80,7 @@ for FR in $PROJECT_FOLDER/data/cleaned/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cl
   bits=16 prefilter
 done
 ```
-### Paired read merge (BBMerge)
+#### Paired read merge (BBMerge)
 ```shell
 for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cleaned.fq.gz.corrected.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
@@ -98,7 +98,7 @@ done
 ## Assembly
 metaspades and megahit are two decent options
 
-### metaspades
+#### metaspades
 Metaspades can only run on paired reads (no option to use single and/or merged pairs, or multiple libraries)
 ```shell
 for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cleaned.fq.gz.corrected.fq.gz; do
@@ -113,7 +113,7 @@ for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.
 done
 ```
 
-### megahit
+#### megahit
 Several options are recommended for soil samples  
 --k-min=27 (or higher)  
 --kmin-1pass  
@@ -145,3 +145,12 @@ for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.
  -k-min=27 --k-step 10 --k-max 127
 done
 ```   
+
+## Taxonomy assignment
+Metakallisto/kracken/centrifuge?
+
+### Binning
+
+
+#### metakallisto
+
