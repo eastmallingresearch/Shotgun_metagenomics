@@ -100,7 +100,6 @@ metaspades and megahit are two decent options
 
 ### metaspades
 Metaspades can only run on paired reads (no option to use single and/or merged pairs, or multiple libraries)
-Also doesn't accept compressed 
 ```shell
 for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cleaned.fq.gz.corrected.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
@@ -115,10 +114,10 @@ done
 ```
 
 ### megahit
-Several options are recommended for soil samples
---k-min=27 (or higher)
---kmin-1pass
---k-min 27 --k-step 10 --k-max 87 (127)
+Several options are recommended for soil samples  
+--k-min=27 (or higher)  
+--kmin-1pass  
+--k-min 27 --k-step 10 --k-max 87 (127)  
 ```shell
 # using pre-merged reads
 for FR in $PROJECT_FOLDER/data/merged/*_1.unmerged.fq.gz; do
