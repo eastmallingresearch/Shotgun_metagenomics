@@ -95,12 +95,6 @@ for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.
 done
 ```
 
-# output can be catted to form a 
-```shell
-
-```
-
-
 ## Assembly
 metaspades and megahit are two decent options
 
