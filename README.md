@@ -18,7 +18,6 @@ mkdir $PROJECT_FOLDER/data/normalised
 mkdir $PROJECT_FOLDER/data/merged
 ```
 
-
 #### Adapter trimming (trimmomatic - extra command line options, e.g. quality trimming, will be passed to trimmomatic)
 Edit the *FR* and the sed to the required format
 ```shell
@@ -93,6 +92,10 @@ for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.
   t=12 \
   vstrict
 done
+```
+#### rename files (could have implemented in the jobs above)
+```shell
+find $PROJECT_FOLDER/data -type f -n *.fq.gz|rename 's/(.*_[12]).*(\.[a-zA-Z]+\.fq\.gz$)/$1$2/'
 ```
 
 ## Assembly
