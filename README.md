@@ -17,33 +17,33 @@ mkdir $PROJECT_FOLDER/data/filtered
 mkdir $PROJECT_FOLDER/data/normalised
 mkdir $PROJECT_FOLDER/data/merged
 ```
+### Adapter removal/quality filtering and contaminant filtering
+BBTools has good options for doing all of this. 
 
-#### Adapter trimming (trimmomatic - extra command line options, e.g. quality trimming, will be passed to trimmomatic)
-Edit the *FR* and the sed to the required format
+I've merged adapter removal, phix filtering and rRNA removal into a single operation using BBDuk (though it has to run multiple times, rather than a single passthrough). To modify any settings will require editing the mega_duk.sh script. Alternatively the three operations can be run seperately using bbduk (PIPELINE.sc -c bbduk). 
+
+rRNA removal is probably best left for metatranscriptomic data. The final false in the below script prevents this step from running
+
+#### Adapter/phix/rRNA removal
+Runs all three of the options in "Filtering full options" shown at bottom
 ```shell
-for FR in $PROJECT_FOLDER/data/fastq/*_1.fq.gz; do
+for FR in $PROJECT_FOLDER/data/trimmed/*_1.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
-  $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c trim \
-  $FR \
-  $RR \
-  $PROJECT_FOLDER/data/trimmed \
+  $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c MEGAFILT \
   $PROJECT_FOLDER/metagenomics_pipeline/common/resources/adapters/truseq.fa \
-  4
-done
-```
-#### Synthetic construct/contaminant filtering (BBduc)
-```shell
-for FR in $PROJECT_FOLDER/data/trimmed/*_1.fq.gz.trimmed.fq.gz; do
-  RR=$(sed 's/_1/_2/' <<< $FR)
-  $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c filter -p bbduk \
   $PROJECT_FOLDER/metagenomics_pipeline/common/resources/contaminants/phix_174.fa \
+  $PROJECT_FOLDER/metagenomics_pipeline/common/resources/contaminants/ribokmers.fa.gz \
   $PROJECT_FOLDER/data/filtered \
   $FR \
   $RR \
-  k=31 \
-  hdist=1
-done
+  false
+done  
 ```
+bbduk command line arguments used:  
+adapter removal forward; ktrim=l k=23 mink=11 hdist=1 tpe tbo t=10
+adapter removal reverse; ktrim=r k=23 mink=11 hdist=1 tpe tbo t=10
+phix filtering; k=31 hdist=1 t=4
+rRNA filtering; k=31 t=4 
 
 #### Human contaminant removal (BBMap)
 ```shell
@@ -97,6 +97,10 @@ done
 ```shell
 find $PROJECT_FOLDER/data -type f -n *.fq.gz|rename 's/(.*_[12]).*(\.[a-zA-Z]+\.fq\.gz$)/$1$2/'
 ```
+
+#### partitioning with clumify
+
+
 
 ## Assembly
 metaspades and megahit are two decent options
