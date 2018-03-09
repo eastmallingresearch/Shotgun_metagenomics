@@ -93,6 +93,18 @@ for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.
   vstrict
 done
 ```
+
+#### Partition reads (Clumpify)
+```shell
+for UR in $PROJECT_FOLDER/data/merged/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cleaned.fq.gz.corrected.fq.gz.unmerged.fq.gz; do
+  MR=$(sed 's/merged/unmerged/' <<< $UR)
+  $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c partition -p clumpify \
+  $PROJECT_FOLDER/data/clumped \
+  $MR \
+  $UR 
+done
+```
+
 #### rename files (could have implemented in the jobs above)
 ```shell
 find $PROJECT_FOLDER/data -type f -n *.fq.gz|rename 's/(.*_[12]).*(\.[a-zA-Z]+\.fq\.gz$)/$1$2/'
