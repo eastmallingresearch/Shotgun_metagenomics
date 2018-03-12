@@ -107,12 +107,8 @@ done
 
 #### rename files (could have implemented in the jobs above)
 ```shell
-find $PROJECT_FOLDER/data -type f -n *.fq.gz|rename 's/(.*_[12]).*(\.[a-zA-Z]+\.fq\.gz$)/$1$2/'
+find $PROJECT_FOLDER/data -type f -name *.fq.gz|rename 's/(.*_[12]).*(\.[a-zA-Z]+\.fq\.gz$)/$1$2/'
 ```
-
-#### partitioning with clumify
-
-
 
 ## Assembly
 metaspades and megahit are two decent options
