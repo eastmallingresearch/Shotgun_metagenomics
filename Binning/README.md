@@ -118,7 +118,7 @@ echo -e \
 clusterBinsToSubbins.py -m metadata.txt -id 0.7 --reClustering --onlyClustering -f -o  $PREFIX_hirbin_output
 
 awk -F"\t" '($1~/[HS]/){print $2, $9, $10}' $PREFIX_hirbin_output/clust0.7/*.uc| \
-awk -F" " '{sub(/_[0-9]+$/,"",$2);sub(/_[0-9]+$/,"",$6);A=$2"\t"$3"\t"$1"\t"$4"\t"$5;if($6~/\*/){B=A}else{B=$6"\t"$7"\t"$1"\t"$8"\t"$9};print A,B}' OFS="\t" > reduced.txt
+awk -F" " '{sub(/_[0-9]+$/,"",$2);sub(/_[0-9]+$/,"",$6);A=$2"_"$3"_"$4"_"$5;if($6~/\*/){B=A}else{B=$6"_"$7"_"$8"_"$9};print A,B}' OFS="\t" > reduced.txt
 ```
 
 #### Parse tab files and extract sub bin counts
