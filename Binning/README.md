@@ -1,8 +1,8 @@
 ## Functional binning
-This pipeline is based on the to HirBin (https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-017-3686-6) pipeline
-but I've replaced most of the code as it is not capable of dealing with soil metagenomics in a reasonable time. Some of the processes will use a lot of memory
+This pipeline is based on the HirBin (https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-017-3686-6) pipeline  
+I've replaced most of the code as it is not capable of dealing with soil metagenomics in a reasonable time. Some of the processes will use a lot of memory
 
-HirBin uses traditional bins to functional domains (Pfam/Tigrfam etc.), then adds an additional step to cluster the bins into a set of sub-bins.
+HirBin uses functional domains (Pfam/Tigrfam etc.) as bins, then adds an additional step to cluster the bins into a set of sub-bins.
   
 ### Annotate
 annotate uses functionalAnnotaion.py (HirBin), but splits input file into 20,000 droid chunks for running on cluster (25 concurrent jobs)
@@ -17,7 +17,7 @@ $PROJECT_FOLDER/metagenomics_pipeline/scripts/fun_bin.sh \
  ~/pipelines/common/resources/pfam/Pfam-A.hmm \
  -e 1e-03
 ```
-#### concatenate annotate output
+#### Concatenate annotate output
 ```shell
 find -type f -name X.gff|head -n1|xargs -I% head -n1 % >$PREFIX.gff
 find -type f -name X.gff|xargs -I% grep -v "##" % >>$PREFIX.gff
@@ -34,7 +34,7 @@ awk -F"\t" '{print $1}' $PREFIX.hmm.cut|sort|uniq > $PREFIX.domains
 # this is a script from HirBin
 con_coor.py -p 1 -o $PREFIX.2.gff -d $PREFIX.pep -m $PREFIX.hmmout
 ```
-## mapping
+## Mapping
 Mapping with BBMAP - anything that outputs a bam file can be substituted
 align reads to assembly - will need to index first
 ```shell
@@ -98,11 +98,9 @@ for F in $P1*.cov; do
 done 
 ```
 
-#### create the required metadata file
+#### create metadata file for 
 ```shell
-echo -e \
-"Name\tGroup\tReference\tAnnotation\tCounts\Domain\n"\
-"$PREFIX\tSTATUS\t$PREFIX.pep\t$PREFIX.hmm.cut\tEMPTY\t$PREFIX.domains" > $PREFIX.metadata.txt
+
 ```
 
 ### Clustering and counting
@@ -117,7 +115,13 @@ rm $PREFIX.TEMP_DOMAINS
 #### Cluster extracted domains (HirBin)
 ```shell
 cd  $PROJECT_FOLDER/data/binning/$PREFIX
+# HirBin uses a metadata file indicating file locations and etc.
+echo -e \
+"Name\tGroup\tReference\tAnnotation\tCounts\Domain\n"\
+"$PREFIX\tSTATUS\t$PREFIX.pep\t$PREFIX.hmm.cut\tEMPTY\t$PREFIX.domains" > metadata.txt
+
 clusterBinsToSubbins.py -m metadata.txt -id 0.7 --reClustering --onlyClustering -f -o  $PREFIX_hirbin_output
+
 awk -F"\t" '($1~/[HS]/){print $2, $9, $10}' $PREFIX_hirbin_output/clust0.7/*.uc| \
 awk -F" " '{sub(/_[0-9]+$/,"",$2);sub(/_[0-9]+$/,"",$6);A=$2"\t"$3"\t"$1"\t"$4"\t"$5;if($6~/\*/){B=A}else{B=$6"\t"$7"\t"$1"\t"$8"\t"$9};print A,B}' OFS="\t" > reduced.txt
 ```
