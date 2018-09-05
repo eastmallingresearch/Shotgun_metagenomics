@@ -17,7 +17,7 @@ $PROJECT_FOLDER/metagenomics_pipeline/scripts/fun_bin.sh \
  ~/pipelines/common/resources/pfam/Pfam-A.hmm \
  -e 1e-03
 ```
-#### Concatenate annotate output
+#### Concatenate annotation output
 ```shell
 find -type f -name X.gff|head -n1|xargs -I% head -n1 % >$PREFIX.gff
 find -type f -name X.gff|xargs -I% grep -v "##" % >>$PREFIX.gff
@@ -96,11 +96,6 @@ for F in $P1*.cov; do
   O=$(sed 's/_.*_L/_L/' <<<$F|sed 's/_1\.cov/.tab/')
   awk -F"\t" '{sub("ID=","|",$(NF-1));OUT=$1$(NF-1)":"$4":"$5":"$7;print OUT,$NF}' OFS="\t" $F > $O
 done 
-```
-
-#### create metadata file for 
-```shell
-
 ```
 
 ### Clustering and counting
