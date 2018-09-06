@@ -27,7 +27,7 @@ find -type f -name X.hmmout|xargs -I% grep -v "#" % >>$PREFIX.hmmout
 find -type f -name X.hmmout|head -n1|xargs -I% tail -n10 % >>$PREFIX.hmmout
 
 grep -v "#" $PREFIX.hmmout|awk -F" " '($21~/^[0-9]+$/) && ($20~/^[0-9]+$/) {print $4,$1,$20,$21,$3,$7}' OFS="\t" > $PREFIX.hmm.cut
-awk -F"\t" '{print $1}' $PREFIX.hmm.cut|sort|uniq > $PREFIX.domains 
+Rscript $PROJECT_FOLDER/metagenomics_pipeline/scripts/subbin_domain_extractor.R $PREFIX.hmm.cut $PREFIX.domains
 ```
 #### Get gff with different MAX_ACCEPTABLE_OVERLAP - example below will produce gff with all overlapping features
 ```shell
@@ -84,41 +84,46 @@ Rscript $PROJECT_FOLDER/metagenomics_pipeline/scripts/cov_count.R "." "$P1.*\\.c
 ```
 
 ## Sub binning 
-I've hacked around with a few of the HirBin settings - for speed mostly and for consistency (or the lack of) in domain names
-will require a tab (converted cov) file from bam_scaffold_count.pl  
-e.g. 
-```shell
-awk -F"\t" '{sub("ID=","|",$(NF-1));OUT=$1$(NF-1)":"$4":"$5":"$7;print OUT,$NF}' OFS="\t" x.cov > x.tab
-```
-All samples
+Create tab files from cov files (originally for consistency with HirBin, but now to reduce processing in R)
+Can be run in parallel.
+
 ```shell
 for F in $P1*.cov; do
   O=$(sed 's/_.*_L/_L/' <<<$F|sed 's/_1\.cov/.tab/')
-  awk -F"\t" '{sub("ID=","|",$(NF-1));OUT=$1$(NF-1)":"$4":"$5":"$7;print OUT,$NF}' OFS="\t" $F > $O
+  awk -F"\t" '{sub("ID=","",$(NF-1));OUT=$1"_"$(NF-1)"_"$4"_"$5;print OUT,$(NF-1),$4,$5,$NF}' OFS="\t" $F > $O
 done 
 ```
 
 ### Clustering and counting
 
 #### Extract functional domains as aa strings
+arg[4] = number of chunks to read the data in (larger has lower memory footprint, but will be slower)
+arg[5] = T/F for parallel processing (currently hard coded to 10 cores) - this will slurp up a lot of memory
 ```shell
-Rscript subbin_domain_extractor.R $PREFIX.hmm.cut $PREFIX.TEMP_DOMAINS
-Rscript subbin_fasta_extractor.R $PREFIX.TEMP_DOMAINS $PREFIX.pep $PREFIX_hirbin_output 100 T
-rm $PREFIX.TEMP_DOMAINS
+Rscript subbin_fasta_extractor.R $PREFIX.domains $PREFIX.pep $PREFIX_hirbin_output 100 T
 ```
 
-#### Cluster extracted domains (HirBin)
+#### Cluster extracted domains
+PIPELINE.sh - c cluster_super_fast SERVERS CORES INPUT_DIR OUTPUT_DIR CLUS_ID
 ```shell
-cd  $PROJECT_FOLDER/data/binning/$PREFIX
-# HirBin uses a metadata file indicating file locations and etc.
-echo -e \
-"Name\tGroup\tReference\tAnnotation\tCounts\Domain\n"\
-"$PREFIX\tSTATUS\t$PREFIX.pep\t$PREFIX.hmm.cut\tEMPTY\t$PREFIX.domains" > metadata.txt
+$PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c cluster_super_fast \
+  blacklace[01][0-9].blacklace 100 \
+  $PROJECT_FOLDER/data/binning/$PREFIX/${PREFIX}_clustering/forClustering \
+  $PROJECT_FOLDER/data/binning/$PREFIX/${PREFIX}_clustering/clust0.7 \
+  0.7 
 
-clusterBinsToSubbins.py -m metadata.txt -id 0.7 --reClustering --onlyClustering -f -o  $PREFIX_hirbin_output
-
-awk -F"\t" '($1~/[HS]/){print $2, $9, $10}' $PREFIX_hirbin_output/clust0.7/*.uc| \
-awk -F" " '{sub(/_[0-9]+$/,"",$2);sub(/_[0-9]+$/,"",$6);A=$2"_"$3"_"$4"_"$5;if($6~/\*/){B=A}else{B=$6"_"$7"_"$8"_"$9};print A,B}' OFS="\t" > reduced.txt
+awk -F"\t" '($1~/[HS]/){print $2, $9, $10}' $PROJECT_FOLDER/data/binning/${PREFIX}_clustering/clust0.7/*.uc| \
+awk -F" " '{
+  sub(/_[0-9]+$/,"",$2);
+  sub(/_[0-9]+$/,"",$6);
+  A=$2"_"$3"_"$4"_"$5;
+  if($6~/\*/) {
+    B=A
+  } else{
+    B=$6"_"$7"_"$8"_"$9
+  };
+  print A,B
+}' OFS="\t" > $PROJECT_FOLDER/data/binning/$PREFIX/reduced.txt
 ```
 
 #### Parse tab files and extract sub bin counts
