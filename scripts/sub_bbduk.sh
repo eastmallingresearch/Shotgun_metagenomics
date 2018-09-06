@@ -2,8 +2,8 @@
 #bbduk
 #$ -S /bin/bash
 #$ -cwd
-#$ -l virtual_free=2G
-#$ -pe smp 4
+#$ -l virtual_free=1G
+#$ -pe smp 12
 
 SCRIPT_DIR=$1; shift
 REF=$1; shift

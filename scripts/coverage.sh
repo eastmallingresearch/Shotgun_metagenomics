@@ -6,9 +6,9 @@
 read -r -d '' HELP << EOM
 #########################################################################
 #                                                                       #
-#   Wrapper script for assmbling data                                   #
+#   Wrapper script for calculating coverage                             #
 #                                                                       #
-#   usage: assemble.sh -p <program> [options]                           #
+#   usage: coverage.sh -p <program> [options]                           #
 #                                                                       #
 #   -p <metaspades|megahit>                                             #
 #                                                                       #
@@ -57,28 +57,25 @@ fi
 
 case $program in
 
-metaspades|spades)
-	qsub -l h=blacklace11 $SCRIPT_DIR/sub_metaspades.sh $@
-	exit 0
-;;
-metaspades2|spades2)
-	PROC=$1;shift
+bam_count.sh|bam_count)
 	REGSERVER=$1;shift
-	qsub -pe smp $PROC -l h=$REGSERVER $SCRIPT_DIR/sub_metaspades2.sh $PROC $@
+	qsub -l h=$REGSERVER $SCRIPT_DIR/sub_bam_count.sh $SCRIPT_DIR $@
 	exit 0
 ;;
-cap3|CAP3)
-	qsub $SCRIPT_DIR/sub_cap3.sh $@
-	exit 0
-;;
-megahit)
-	qsub $SCRIPT_DIR/sub_megahit.sh $@
-	exit 0
-;;
-megahit2)
-	PROC=$1;shift
+bedtools.sh|bedtools)	
 	REGSERVER=$1;shift
-	qsub -pe smp $PROC -l h=$REGSERVER $SCRIPT_DIR/sub_megahit2.sh $PROC $@
+	LOC=$1;shift
+	GFF=$1;shift
+	dir=`mktemp -d -p $LOC`
+	cd $LOC
+	split -l 100000 $GFF -a 4 -d $dir/${GFF}.
+	cd -
+	cd $dir
+	find $PWD -name "$GFF*" >L${GFF}_splitfiles.txt
+	TASKS=$(wc -l L${GFF}_splitfiles.txt|awk -F" " '{print $1}')
+	qsub -l h=$REGSERVER -t 1-$TASKS:1 -tc 25  $SCRIPT_DIR/sub_bedtools.sh $dir $GFF $@
+	#$SCRIPT_DIR/sub_bedtools.sh $dir $GFF $@
+	cd -
 	exit 0
 ;;
 *)

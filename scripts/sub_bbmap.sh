@@ -2,8 +2,8 @@
 #bbduk
 #$ -S /bin/bash
 #$ -cwd
-#$ -l virtual_free=4G
-#$ -pe smp 8
+#$ -l virtual_free=1G
+#$ -pe smp 10
 
 SCRIPT_DIR=$1; shift
 REF=$1; shift
@@ -24,7 +24,7 @@ bbmap.sh \
  outu2=$R.cleaned.fq.gz \
  outm1=$F.unclean.fq.gz \
  outm2=$R.uncleaned.fq.gz \
- path=$REF/ \
+ ref=$REF/ \
  $@
 
 mkdir -p $OUTDIR/unclean

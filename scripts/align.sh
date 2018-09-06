@@ -8,7 +8,7 @@ read -r -d '' HELP << EOM
 #                                                                       #
 #   Wrapper script for assmbling data                                   #
 #                                                                       #
-#   usage: assemble.sh -p <program> [options]                           #
+#   usage: align.sh -p <program> [options]                           #
 #                                                                       #
 #   -p <metaspades|megahit>                                             #
 #                                                                       #
@@ -57,28 +57,10 @@ fi
 
 case $program in
 
-metaspades|spades)
-	qsub -l h=blacklace11 $SCRIPT_DIR/sub_metaspades.sh $@
-	exit 0
-;;
-metaspades2|spades2)
+bbmap|BBMap)	
 	PROC=$1;shift
 	REGSERVER=$1;shift
-	qsub -pe smp $PROC -l h=$REGSERVER $SCRIPT_DIR/sub_metaspades2.sh $PROC $@
-	exit 0
-;;
-cap3|CAP3)
-	qsub $SCRIPT_DIR/sub_cap3.sh $@
-	exit 0
-;;
-megahit)
-	qsub $SCRIPT_DIR/sub_megahit.sh $@
-	exit 0
-;;
-megahit2)
-	PROC=$1;shift
-	REGSERVER=$1;shift
-	qsub -pe smp $PROC -l h=$REGSERVER $SCRIPT_DIR/sub_megahit2.sh $PROC $@
+	qsub -pe smp $PROC -l h=$REGSERVER  $SCRIPT_DIR/sub_bbmap_bam.sh $PROC $@
 	exit 0
 ;;
 *)

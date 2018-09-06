@@ -6,13 +6,13 @@
 read -r -d '' HELP << EOM
 #########################################################################
 #																		#
-#	Wrapper script for merging PE										#
+#	Wrapper script for partioning (clumping) reads						#
 #																		#
-#	usage: merge.sh -p <program> [options]								#
+#	usage: partition.sh -p <program> [options]							#
 #																		#
-#	-p <bbmerge|bbmergeauto>										    #
+#	-p <clumpify> 													    #
 #																		#
-#	merge.sh Forward Reverse Outdir		 						 		#
+#	partition.sh -p clumpify Outdir merged_reads unmerged_reads 	 	#
 #	 																	#
 #	 																	#
 #########################################################################
@@ -56,8 +56,8 @@ fi
 
 case $program in
 
-bbmerge-auto|BBmerge-auto)
-	qsub -l h=blacklace11 $SCRIPT_DIR/sub_bbmerge_auto.sh $SCRIPT_DIR $@
+clumpify|clumify|clump)
+	qsub $SCRIPT_DIR/sub_clumpify.sh $SCRIPT_DIR $@
 	exit 0
 ;;
 *)

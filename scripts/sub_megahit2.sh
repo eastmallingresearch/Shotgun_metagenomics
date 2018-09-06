@@ -2,9 +2,9 @@
 # megahit
 #$ -S /bin/bash
 #$ -cwd
-#$ -l virtual_free=4G
-#$ -pe smp 12
+#$ -l virtual_free=1G
 
+PROC=$1;shift
 OUTDIR=$1;shift
 PREFIX=$1;shift
 
@@ -13,7 +13,7 @@ cd $TMP
 
 megahit \
  -o $TMP/output \
- -t 12 \
+ -t $PROC \
  --kmin-1pass \
  --out-prefix $PREFIX \
  $@ 

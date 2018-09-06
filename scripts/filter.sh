@@ -65,15 +65,15 @@ bowtie|Bowtie|bowtie2|Bowtie2)
 	exit 0
 ;;
 bbduk|BBDuk)
-	qsub -l h=blacklace11 $SCRIPT_DIR/sub_bbduk.sh $SCRIPT_DIR $@
+	qsub  $SCRIPT_DIR/sub_bbduk.sh $SCRIPT_DIR $@
 	exit 0
 ;;
 bbmap|BBMap)
-	qsub -l h=blacklace01,h=blacklace11 $SCRIPT_DIR/sub_bbmap.sh $SCRIPT_DIR $@
+	qsub -l h="blacklace11.blacklace" $SCRIPT_DIR/sub_bbmap.sh $SCRIPT_DIR $@
 	exit 0
 ;;
 sortmerna|SortMeRNA)
-	qsub -l h=blacklace01,h=blacklace11 $SCRIPT_DIR/sub_sortmerna.sh $SCRIPT_DIR $@
+	qsub -l h="blacklace[10]1.blacklace" $SCRIPT_DIR/sub_sortmerna.sh $SCRIPT_DIR $@
 	exit 0
 ;;
 *)

@@ -101,10 +101,6 @@ normalise|normalise.sh)
 	$SCRIPT_DIR/normalise.sh $@
 	exit 0
 ;;
-align|align.sh|star)
-	$SCRIPT_DIR/star.sh $@
-	exit 0
-;;
 dereplicate|dereplicate.sh)
 	$SCRIPT_DIR/dereplicate.sh $@
 	exit 0
@@ -129,7 +125,36 @@ merge|merge.sh)
 	$SCRIPT_DIR/merge.sh $@
 	exit 0
 ;;
-
+partition|partition.sh)
+	$SCRIPT_DIR/partition.sh $@
+	exit 0
+;;
+align|align.sh)
+	$SCRIPT_DIR/align.sh $@
+	exit 0
+;;
+coverage|coverage.sh)
+	$SCRIPT_DIR/coverage.sh $@
+	exit 0
+;;
+cov_bed)
+	SERVER=$1;shift
+	qsub -l h=$SERVER $SCRIPT_DIR/sub_cov_bed.sh $SCRIPT_DIR $@
+	exit 0
+;;
+cluster_super_fast)
+  SERVER=$1;shift
+  CORES=$1;shift
+  FILELOC=$1
+  TASKS=$(ls $FILELOC/*.fasta|wc -l)
+  qsub -l h=$SERVER -t 1-$TASKS:1 -tc $CORES $SCRIPT_DIR/sub_cluster_super_fast.sh $@
+  exit 0
+;;
+megafilt|MEGAFILT)
+    qsub -l h=balcklace01,h=blacklace11 $SCRIPT_DIR/mega_duk.sh $SCRIPT_DIR $@
+   #$SCRIPT_DIR/mega_duk.sh $SCRIPT_DIR $@
+	exit 0
+;;
 mega|MEGA)
 	
 	STRAW_DN=$1; shift
@@ -144,10 +169,6 @@ mega|MEGA)
 
  	qsub -hold_jid MEGA_SPLIT_${JOBNAME}_1 -hold_jid MEGA_SPLIT_${JOBNAME}_2 $SCRIPT_DIR/MEGA_BEHOLD.sh $SCRIPT_DIR $STRAW_DN $SAMPLE $JOBNAME
 
-	exit 0
-;;
-assembly|assembly.sh)
-	echo $SCRIPT_DIR/assembly.sh $@
 	exit 0
 ;;
 TEST)

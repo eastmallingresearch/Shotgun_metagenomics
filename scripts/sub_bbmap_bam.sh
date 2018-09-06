@@ -1,12 +1,13 @@
 #!/bin/bash
-#bbduk
+# megahit
 #$ -S /bin/bash
 #$ -cwd
 #$ -l virtual_free=1G
-#$ -pe smp 14
 
-SCRIPT_DIR=$1; shift
+PROC=$1; shift
 OUTDIR=$1; shift
+PREFIX=$1; shift
+REF=$1; shift
 FORWARD=$1; shift
 REVERSE=${1:-NOTHING}; shift
 
@@ -14,14 +15,15 @@ REVERSE=${1:-NOTHING}; shift
 cd $TMP
 
 F=$(sed 's/.*\///' <<<$FORWARD)
-R=$(sed 's/.*\///' <<<$REVERSE)
 
-bbnorm.sh \
+bbmap.sh \
  in1=$FORWARD \
  in2=$REVERSE \
- out1=$F.corrected.fq.gz \
- out2=$R.corrected.fq.gz \
- $@
+ out=$F.bam \
+ t=$PROC $@ -Xmx31g
+#| samtools sort -O bam -o ${PREFIX}.${F}.bam -T TEMP_${PREFIX} -@ $PROC -m 2G
 
-cp *.corrected.fq.gz $OUTDIR/.
+mkdir -p $OUTDIR
+
+cp * $OUTDIR/.
 
