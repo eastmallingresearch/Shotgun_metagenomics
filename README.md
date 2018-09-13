@@ -3,7 +3,8 @@
 ## Preprocessing
 
 ## Assembly
-metaspades and megahit are two decent options
+metaspades and megahit are two decent options  
+Current version of MetaSPAdes 
 
 
 ## Taxonomy assignment
@@ -11,6 +12,6 @@ Metakallisto/kracken/centrifuge?
 
 ### Binning
 
+#### Functional bins
 
-#### metakallisto
-
+#### Genomic bins
