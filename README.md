@@ -2,12 +2,12 @@
 
 ## [Preprocessing](../master/Preprocessing/README.md)
 
-## Assembly
+## [Assembly](../master/Assembly/README.md)
 metaspades and megahit are two decent options  
 Current version of MetaSPAdes can only assemble a single sample - pity as it produces slightly better assemblies than megahit.  
 Megahit uses a lot less (~1/4) memory than MetaSPAdes
 
-### Binning
+### [Binning](../master/Binning/README.md)
 
 #### Functional bins
 
