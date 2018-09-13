@@ -133,7 +133,7 @@ Rscript $PROJECT_FOLDER/metagenomics_pipeline/scripts/cov_count.R "." "$P1.*\\.c
 
 #### Sub bin counts
 Create tab files from cov files (originally for consistency with HirBin, but now to reduce processing in R, could be run in parallel)  
-I could get bam_scaffold_count.pl to output in this format, might save a few minutes...
+I could get bam_scaffold_count.pl to output in this format, or just bung the script below into the bam_count pipeline to produce both...
 ```shell
 for F in $P1*.cov; do
   O=$(sed 's/_.*_L/_L/' <<<$F|sed 's/_1\.cov/.tab/')
