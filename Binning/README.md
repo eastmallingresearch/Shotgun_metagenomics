@@ -1,8 +1,8 @@
 ## Functional binning
 This pipeline is based on the HirBin (https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-017-3686-6) pipeline  
-I've replaced most of the code as it is not capable of dealing with soil metagenomics in a reasonable time. Some of the processes will use a lot of memory
+I've replaced most of the code as it is not capable of dealing with soil metagenomics in a reasonable time. Some of the processes use a lot of memory
 
-HirBin uses functional domains (Pfam/Tigrfam etc.) as bins, then adds an additional step to cluster the bins into a set of sub-bins.
+HirBin identifies functional domains (Pfam/Tigrfam etc.), then adds an additional step to cluster the bins into a set of sub-bins. The identification of the domains is the only bit left of the HirBin pipeline I haven't needed to rewrite (uses HMMER to do the actual id of the domains).
   
 ### Annotation
 Annotating an assembly uses functionalAnnotaion.py (HirBin), but splits assembly file into 20,000 droid chunks for running on cluster  
@@ -32,6 +32,7 @@ awk -F" " '($21~/^[0-9]+$/) && ($20~/^[0-9]+$/) {print $4,$1,$20,$21,$3,$7}' OFS
 $PROJECT_FOLDER/metagenomics_pipeline/scripts/subbin_domain_extractor.pl \
 > $PROJECT_FOLDER/data/binning/$PREFIX/$PREFIX.domains
 ```
+
 #### Get gff with different MAX_ACCEPTABLE_OVERLAP - example below will produce gff with all overlapping features
 ```shell
 # this is a script from HirBin
