@@ -107,7 +107,7 @@ done
 ### Count coverage
 bam_scaffold_count.pl will output a cov file (bedtools output file). Vastly faster than bedtools for counting overlapping features (with no minimum overlap). If minimum overall > 1 is required use bedtools.
 NOTE: this counts unique F + R and paired overlap (*i.e.* if both overlap it gets a score of 1), bedtools counts F + R  (i.e. if both overlap it gets a score of 2)  
-bam_scaffold_count.pl can be run in two modes, bin counting or domain hit counting mode. Add cov (or anything) as a second flag for domain hit counting - this is necessary to get sub bin counts.
+bam_scaffold_count.pl can be run in two modes, bin counting or domain hit counting mode. Add cov (or anything) as a second flag for domain hit counting - this is necessary to get sub bin counts, and is the recommended mode.
 
 ```shell
 samtools view bam_file|~/pipelines/metagenomics/scripts/bam_scaffold_count.pl $PREFIX.gff > bam_counts.txt
@@ -126,12 +126,14 @@ done
 ```
 
 #### Bin counts
+Get bin counts from the cov format domain counts and output as count matrix
 ```shell
 Rscript $PROJECT_FOLDER/metagenomics_pipeline/scripts/cov_count.R "." "$P1.*\\.cov" "$PREFIX.countData"
 ```
 
 #### Sub bin counts
-Create tab files from cov files (originally for consistency with HirBin, but now to reduce processing in R, could be run in parallel)
+Create tab files from cov files (originally for consistency with HirBin, but now to reduce processing in R, could be run in parallel)  
+I could get bam_scaffold_count.pl to output in this format, might save a few minutes...
 ```shell
 for F in $P1*.cov; do
   O=$(sed 's/_.*_L/_L/' <<<$F|sed 's/_1\.cov/.tab/')
