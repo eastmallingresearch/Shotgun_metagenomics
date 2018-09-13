@@ -1,7 +1,7 @@
 # Shotgun_metagenomics
 
-## [Preprocessing] (../master/Preprocessing/README.md)
-
+## Preprocessing
+[Preprocessing] (../master/Preprocessing/README.md)
 
 ## Assembly
 metaspades and megahit are two decent options  
