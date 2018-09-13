@@ -54,7 +54,7 @@ con_coor.py -p 1 -o $PREFIX.2.gff -d $PREFIX.pep -m $PREFIX.hmmout
 #### Sub bins
 
 ##### Extract functional domains as aa strings
-arg[4] = number of chunks to read the data in (larger has lower memory footprint, but will be slower)
+arg[4] = number of chunks to read the data in (larger has lower memory footprint, but will be slower)  
 arg[5] = T/F for parallel processing (currently hard coded to 10 cores) - this will slurp up a lot of memory
 ```shell
 Rscript subbin_fasta_extractor.R $PREFIX.domains $PREFIX.pep $PREFIX_hirbin_output 100 T
