@@ -1,6 +1,6 @@
 # Shotgun_metagenomics
 
-## [Preprocessing] (../master/Preprocessing)
+## [Preprocessing] (../master/Preprocessing/README.md)
 
 
 ## Assembly
