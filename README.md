@@ -1,7 +1,7 @@
 # Shotgun_metagenomics
 
-## Preprocessing
-https://github.com/eastmallingresearch/Shotgun_metagenomics/tree/master/Preprocessing
+## [Preprocessing] (../master/Preprocessing)
+
 
 ## Assembly
 metaspades and megahit are two decent options  
