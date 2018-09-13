@@ -3,16 +3,24 @@ This pipeline is based on the HirBin (https://bmcgenomics.biomedcentral.com/arti
 I've replaced most of the code as it is not capable of dealing with soil metagenomics in a reasonable time. Some of the processes use a lot of memory
 
 HirBin identifies functional domains (Pfam/Tigrfam etc.), then adds an additional step to cluster the bins into a set of sub-bins. The identification of the domains is the only bit left of the HirBin pipeline I haven't needed to rewrite (uses HMMER to do the actual id of the domains).
-  
+
+The pipeline described below is an example taken from the oak decline project
+```shell
+# set some variables
+PROJECT_FOLDER=~/projects/Oak_decline/metagenomics
+PREFIX=BIGWOOD
+P1=${PREFIX:0:1}
+ln -s ~/pipeline/metagenomics $PROJECT_FOLDER/metagenomics_pipeline
+```
+
 ### Annotation
-Annotating an assembly uses functionalAnnotaion.py (HirBin), but splits assembly file into 20,000 droid chunks for running on cluster  
-functionalAnnotaion.py needs to be reachable via path. 
+Annotating an assembly uses functionalAnnotaion.py (HirBin),
 
 ```shell
 functionalAnnotation.py -m METADATA_FILE -db DATABASE_FILE -e EVALUE_CUTOFF -n N -p MAX_ACCEPTABLE_OVERLAP
 ```
 
-The script below will find pfam domains
+fun_bin.sh uses functionAnnotation.py to find domians, but splits assembly file into 20,000 droid chunks for running on cluster.  
 
 ```shell
 $PROJECT_FOLDER/metagenomics_pipeline/scripts/fun_bin.sh \
@@ -23,6 +31,10 @@ $PROJECT_FOLDER/metagenomics_pipeline/scripts/fun_bin.sh \
 ```
 
 #### Concatenate annotation output
+The output from fun_bin.sh will be in a large number of sub directories inside a tmp.* directory in the (above) $PROJECT_FOLDER/data/assembled/megahit/$PREFIX directory
+
+The below scripts concatenate the output
+
 ```shell
 find -type f -name X.gff|head -n1|xargs -I% head -n1 % >$PROJECT_FOLDER/data/binning/$PREFIX/$PREFIX.gff
 find -type f -name X.gff|xargs -I% grep -v "##" % >>$PROJECT_FOLDER/data/binning/$PREFIX/$PREFIX.gff
@@ -49,7 +61,9 @@ Rscript subbin_fasta_extractor.R $PREFIX.domains $PREFIX.pep $PREFIX_hirbin_outp
 ```
 
 ##### Cluster extracted domains
+```shell
 PIPELINE.sh - c cluster_super_fast SERVERS CORES INPUT_DIR OUTPUT_DIR CLUS_ID
+```
 ```shell
 $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c cluster_super_fast \
   blacklace[01][0-9].blacklace 100 \
@@ -59,6 +73,7 @@ $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c cluster_super_fast 
 ```
 
 ##### concatenate clustering output
+reduced.txt (and the \*.uc files) is a map of domains (column 2) to sub bins (column 1)
 ```shell
 cat $PROJECT_FOLDER/data/binning/${PREFIX}_clustering/clust0.7/*.uc > $PROJECT_FOLDER/data/binning/$PREFIX/reduced.txt
 ```
