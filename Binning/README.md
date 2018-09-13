@@ -107,10 +107,13 @@ for BAM in $PROJECT_FOLDER/data/assembled/aligned/megahit/$P1*.bam; do
 done
 ```
 
-## Sub binning 
-Create tab files from cov files (originally for consistency with HirBin, but now to reduce processing in R)
-Can be run in parallel.
+#### Bin counts
+```shell
+Rscript $PROJECT_FOLDER/metagenomics_pipeline/scripts/cov_count.R "." "$P1.*\\.cov" "$PREFIX.countData"
+```
 
+#### Sub bin counts
+Create tab files from cov files (originally for consistency with HirBin, but now to reduce processing in R, could be run in parallel)
 ```shell
 for F in $P1*.cov; do
   O=$(sed 's/_.*_L/_L/' <<<$F|sed 's/_1\.cov/.tab/')
@@ -118,12 +121,7 @@ for F in $P1*.cov; do
 done 
 ```
 
-Convert per sample counts (cov output) to count matrix
-```shell
-Rscript $PROJECT_FOLDER/metagenomics_pipeline/scripts/cov_count.R "." "$P1.*\\.cov" "$PREFIX.countData"
-```
-
-#### Parse tab files and extract sub bin counts
+Parse the tab files to create countData matrix
 ```shell
 Rscript subbin_parser.R reduced.txt *.tab $PREFIX.countData.sub_bins
 ```
