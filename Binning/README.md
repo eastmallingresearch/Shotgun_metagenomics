@@ -6,6 +6,9 @@ HirBin identifies functional domains (Pfam/Tigrfam etc.), then adds an additiona
 
 The pipeline described below is an example taken from the oak decline project
 
+I'm likely also to implement an assembly free functional binning pipeline - Metakallisto or Carnelian (this was actually the original plan, but I got sidetracked into doing assemblies)  
+
+
 ```shell
 # set some variables
 PROJECT_FOLDER=~/projects/metagenomics
