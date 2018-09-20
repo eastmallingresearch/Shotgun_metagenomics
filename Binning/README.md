@@ -1,6 +1,6 @@
 ## Functional binning
 This pipeline is based on the HirBin (https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-017-3686-6) pipeline  
-I've replaced most of the code as it is not capable of dealing with soil metagenomics in a reasonable time. Some of the processes use a lot of memory
+I've replaced most of the code as it was not capable of dealing with soil metagenomics in a reasonable time (still only uses Perl and R - both pretty slow). Instead some of the processes use a lot of memory.
 
 HirBin identifies functional domains (Pfam/Tigrfam etc.), then adds an additional step to cluster the bins into a set of sub-bins. The identification of the domains is the only bit left of the HirBin pipeline I haven't needed to rewrite (uses HMMER to do the actual id of the domains).
 
