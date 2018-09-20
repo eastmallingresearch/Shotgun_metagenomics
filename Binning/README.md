@@ -5,6 +5,7 @@ I've replaced most of the code as it was not capable of dealing with soil metage
 HirBin identifies functional domains (Pfam/Tigrfam etc.), then adds an additional step to cluster the bins into a set of sub-bins. The identification of the domains is the only bit left of the HirBin pipeline I haven't needed to rewrite (uses HMMER to do the actual id of the domains).
 
 The pipeline described below is an example taken from the oak decline project
+TO DO: make functional domain finding compatible with compressed (gz) assemblies.
 ```shell
 # set some variables
 PROJECT_FOLDER=~/projects/Oak_decline/metagenomics
