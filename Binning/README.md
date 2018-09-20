@@ -23,7 +23,7 @@ functionalAnnotation.py -m METADATA_FILE -db DATABASE_FILE -e EVALUE_CUTOFF -n N
 
 fun_bin.sh uses functionAnnotation.py to find domians, but splits assembly file into 20,000 droid chunks for running on cluster.   
 
-TO DO: make functional domain finding compatible with compressed (gz) assemblies.
+![#f03c15](https://placehold.it/15/f03c15/000000?text=+)TO DO: make functional domain finding compatible with compressed (gz) assemblies.
 ```shell
 $PROJECT_FOLDER/metagenomics_pipeline/scripts/fun_bin.sh \
  1 $PROJECT_FOLDER/data/assembled/megahit/$PREFIX \
