@@ -8,8 +8,8 @@ The pipeline described below is an example taken from the oak decline project
 
 ```shell
 # set some variables
-PROJECT_FOLDER=~/projects/Oak_decline/metagenomics
-PREFIX=BIGWOOD
+PROJECT_FOLDER=~/projects/metagenomics
+PREFIX=MYSAMPLES
 P1=${PREFIX:0:1}
 ln -s ~/pipeline/metagenomics $PROJECT_FOLDER/metagenomics_pipeline
 ```
@@ -21,12 +21,12 @@ Annotating an assembly uses functionalAnnotaion.py (HirBin)
 functionalAnnotation.py -m METADATA_FILE -db DATABASE_FILE -e EVALUE_CUTOFF -n N -p MAX_ACCEPTABLE_OVERLAP
 ```
 
-fun_bin.sh uses functionAnnotation.py to find domians, but splits assembly file into 20,000 droid chunks for running on cluster.   
+fun_bin.sh uses functionAnnotation.py to find domians, but splits assembly into 20,000 droid chunks for running on cluster.   
 
 ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) Assembly can be gz compressed or uncompressed
 ```shell
 $PROJECT_FOLDER/metagenomics_pipeline/scripts/fun_bin.sh \
- 1 $PROJECT_FOLDER/data/assembled/megahit/$PREFIX \
+ 1 $PROJECT_FOLDER/data/assembled/$PREFIX \
  $PREFIX.contigs.fa \
  ~/pipelines/common/resources/pfam/Pfam-A.hmm \
  -e 1e-03
