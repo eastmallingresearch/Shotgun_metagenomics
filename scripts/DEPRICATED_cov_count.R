@@ -1,3 +1,5 @@
+# Depricated use subbin_parser_v2.R in preference
+
 library(data.table)
 
 # get command arguments
