@@ -129,7 +129,7 @@ for BAM in $PROJECT_FOLDER/data/assembled/aligned/megahit/$P1*.bam; do
 done
 ```
 
-#### Bin counts (depricated - sub bin counter will do this as well)
+#### Bin counts (deprecated - sub bin counter will do this as well)
 Get bin counts from the cov format domain counts and output as count matrix
 ```shell
 Rscript $PROJECT_FOLDER/metagenomics_pipeline/scripts/cov_count.R cov_file_location "$PREFIX.countData"
