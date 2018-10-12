@@ -110,13 +110,13 @@ done
 ```
 
 ### Count coverage
-bam_scaffold_count.pl will output a cov file (bedtools output file). Vastly faster than bedtools for counting overlapping features (with no minimum overlap). If minimum overall > 1 is required use bedtools.
-NOTE: this counts unique F + R and paired overlap (*i.e.* if both overlap it gets a score of 1), bedtools counts F + R  (i.e. if both overlap it gets a score of 2)  
-bam_scaffold_count.pl can be run in two modes, bin counting or domain hit counting mode. Add cov (or anything) as a second flag for domain hit counting - this is necessary to get sub bin counts, and is the recommended mode.
+bam_scaffold_count.pl will output a cov file (bedtools output file). It's vastly faster than bedtools for counting overlapping features (with no minimum overlap). If minimum overall > 1 is required use bedtools.
+NOTE: by default this counts unique F + R and paired overlap (*i.e.* if both overlap it gets a score of 1), bedtools counts F + R  (i.e. if both overlap it gets a score of 2). Set BEDTOOLS to true to count as per bedtools
 
 ```shell
-samtools view bam_file|~/pipelines/metagenomics/scripts/bam_scaffold_count.pl $PREFIX.gff > bam_counts.txt
-samtools view bam_file|~/pipelines/metagenomics/scripts/bam_scaffold_count.pl $PREFIX.gff cov> bam_file.cov
+bam_scaffold_count.pl GFF_FILE [BEDTOOLS] < SAM_LINE
+samtools view bam_file|~/pipelines/metagenomics/scripts/bam_scaffold_count.pl $PREFIX.gff > bam_counts.cov
+samtools view bam_file|~/pipelines/metagenomics/scripts/bam_scaffold_count.pl $PREFIX.gff true> bedtools_counts.cov
 ```
 Get counts - pipeline
 ```shell
@@ -126,7 +126,6 @@ for BAM in $PROJECT_FOLDER/data/assembled/aligned/megahit/$P1*.bam; do
   $BAM \
   $PROJECT_FOLDER/data/$PREFIX/${PREFIX}.gff \
   $PROJECT_FOLDER/data/assembled/counts/megahit \
-  cov
 done
 ```
 
@@ -137,12 +136,12 @@ Rscript $PROJECT_FOLDER/metagenomics_pipeline/scripts/cov_count.R "." "$P1.*\\.c
 ```
 
 #### Sub bin counts
-Create tab files from cov files (originally for consistency with HirBin, but now to reduce processing in R, could be run in parallel)  
+Create tab files from cov files (originally for consistency with HirBin, but now to reduce processing in R)  
 I could get bam_scaffold_count.pl to output in this format, or just bung the script below into the bam_count pipeline to produce both...
 ```shell
-for F in $P1*.cov; do
+for F in *.cov; do
   O=$(sed 's/_.*_L/_L/' <<<$F|sed 's/_1\.cov/.tab/')
-  awk -F"\t" '{sub("ID=","",$(NF-1));OUT=$1"_"$(NF-1)"_"$4"_"$5;print OUT,$(NF-1),$4,$5,$NF}' OFS="\t" $F > $O
+  awk -F"\t" '{sub("ID=","",$(NF-1));OUT=$1"_"$(NF-1)"_"$4"_"$5;print OUT,$(NF-1),$4,$5,$NF}' OFS="\t" $F > $O &
 done 
 ```
 
