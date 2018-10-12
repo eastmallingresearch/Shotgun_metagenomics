@@ -148,6 +148,6 @@ done
 
 Parse the tab files to create countData matrix
 ```shell
-Rscript subbin_parser.R reduced.txt *.tab $PREFIX.countData.sub_bins
+Rscript subbin_parser.R reduced.txt tab_file_location $PREFIX.countData.sub_bins
 ```
 
