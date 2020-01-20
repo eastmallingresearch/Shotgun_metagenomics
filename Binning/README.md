@@ -150,3 +150,69 @@ Parse the tab files to create countData matrix
 Rscript subbin_parser.R reduced.txt tab_file_location $PREFIX
 ```
 
+# Taxonomy binning
+
+Taxonomy binning uses a mashup of various pipelines. I did try and implement Anvio, but it is vastly too slow (and memory hungry) for the size of data involved in soil metegenomics.  
+
+The binning is done by Metabat which requires sorted bam files
+
+## Sort bam files
+```shell
+for BAM in $PROJECT_FOLDER/data/assembled/aligned/megahit/*.bam; do
+ PREFIX=$(echo $f|sed -e 's/\..*//')
+ echo sbatch --mem-per-cpu 2000M -c 10 \
+ $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_bam_sort.sh \
+ 10 $PROJECT_FOLDER/data/assembled/aligned/sorted $PREFIX $BAM
+done
+```
+## Run metabat
+
+I need to scriptify this ar some stage
+
+```shell
+BAM=$(for f in $PROJECT_FOLDER/data/assembled/aligned/sorted*; do echo $f; done|tr  '\n' ' ')
+runMetaBat.sh  --unbinned -m 1500 -x 0 --minCVSum 0.5 \
+$PROJECT_FOLDER/data/assembled/megahit/my.contigs.fa $BAM &
+```
+
+## Taxonomy assignment
+
+This is done using Kaiju. First step is to set-up an nr database
+
+```shell
+kaiju-makedb -s nr_euk 
+kaiju -t nodes.dmp -f kaiju_db.fmi -i fortaxa.fa -o kaiju.out -z 10 -v
+```
+Then run Kaiju for a catted version of the bins produced by  metabat
+
+```shell
+cat bin*.fa >all.bins.fa
+kaiju -t nodes.dmp -f ./nr_euk/kaiju_db_nr_euk.fmi -i all.bins.fa -o all.kaiju.out -z 20 -v
+```
+
+Add taxon names to the output
+```shell
+kaiju-addTaxonNames -t nodes.dmp -n names.dmp -r superkingdom,phylum,class,order,family,genus,species -i all.kaiju.out -o all.names.out &
+```
+
+### Add protein names to the bins
+
+I've done this by using sqlite - it may not be the best method but it is fairly speedy and easy to implement. 
+There is a slight problem that a sqlite query can have a maximum of 9999 'or' statements.
+
+
+#### Set-up database
+```shell
+zgrep ">.*?\[" -oP nr.gz |sed 's/..$//'|sed 's/>//'|sed 's/MULTIGENE: //'|sed 's/ /|/' >nr.names
+sqlite3 nr.db "CREATE TABLE nr(acc TEXT PRIMARY KEY, desc TEXT)"
+sqlite3 -separator "|" nr.db ".import nr.names nr" 2>/dev/null
+```
+#### Extract protein names
+```shell
+awk -F"\t" '{print $6}' OFS="," all.kaiju.out|sed 's/.$//'|awk -F"," '{ for(i = 1; i <= NF; i++) { print "acc=\x27"$i"\x27 OR"; } }'|sed '$s/OR//'|split -l 9999
+for f in x*; do 
+ sed -i -e '$s/OR//' $f
+ sed -i -e '1s/acc/SELECT * FROM nr WHERE acc/' $f
+ sqlite3 nr.db <$f >> all.prots.out
+done
+```
