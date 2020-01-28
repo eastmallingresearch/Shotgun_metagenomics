@@ -154,15 +154,16 @@ Rscript subbin_parser.R reduced.txt tab_file_location $PREFIX
 
 Taxonomy binning uses a mashup of various pipelines. I did try and implement Anvio, but it is vastly too slow (and memory hungry) for the size of data involved in soil metegenomics.  
 
-The binning is done by Metabat which requires sorted bam files
+The binning is done by Metabat which requires sorted bam files (as produced above).  
+Note - cluster jobs are written for slurm not grid engine
 
 ## Sort bam files
 ```shell
 for BAM in $PROJECT_FOLDER/data/assembled/aligned/megahit/*.bam; do
  PREFIX=$(echo $f|sed -e 's/\..*//')
- echo sbatch --mem-per-cpu 2000M -c 10 \
+  sbatch --mem-per-cpu 4500M -c 10 \
  $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_bam_sort.sh \
- 10 $PROJECT_FOLDER/data/assembled/aligned/sorted $PREFIX $BAM
+ 10 $PROJECT_FOLDER/data/sorted $PREFIX $BAM
 done
 ```
 ## Run metabat
@@ -170,29 +171,44 @@ done
 I need to scriptify this ar some stage
 
 ```shell
-BAM=$(for f in $PROJECT_FOLDER/data/assembled/aligned/sorted*; do echo $f; done|tr  '\n' ' ')
-runMetaBat.sh  --unbinned -m 1500 -x 0 --minCVSum 0.5 \
-$PROJECT_FOLDER/data/assembled/megahit/my.contigs.fa $BAM &
+# get list of bam filed for each assembly
+BAM=$(for f in $PROJECT_FOLDER/data/assembled/aligned/sorted/$P1*; do echo $f; done|tr  '\n' ' ')
+
+# Run metabat
+sbatch --mem=40000 -p medium $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_metabat.sh \
+$PROJECT_FOLDER/data/assembled/megahit/$PREFIX/$PREFIX.contigs.fa.gz \
+$PROJECT_FOLDER/data/taxonomy_binning/${PREFIX}_BINS $BAMS
 ```
 
 ## Taxonomy assignment
 
 This is done using Kaiju. First step is to set-up an nr database
 
+(The database is stored in $PROJECT_FOLDER/data/kaiju for the following scripts)
 ```shell
 kaiju-makedb -s nr_euk 
-kaiju -t nodes.dmp -f kaiju_db.fmi -i fortaxa.fa -o kaiju.out -z 10 -v
-```
-Then run Kaiju for a catted version of the bins produced by  metabat
-
-```shell
-cat bin*.fa >all.bins.fa
-kaiju -t nodes.dmp -f ./nr_euk/kaiju_db_nr_euk.fmi -i all.bins.fa -o all.kaiju.out -z 20 -v
 ```
 
-Add taxon names to the output
+Second step is to concatenate the bins, capturing bin name.
 ```shell
-kaiju-addTaxonNames -t nodes.dmp -n names.dmp -r superkingdom,phylum,class,order,family,genus,species -i all.kaiju.out -o all.names.out &
+
+for f in $PROJECT_FOLDER/data/taxonomy_binning/$PREFIX_BINS/*.fa; do
+ sed -e "s/>k/>${f}.k/" $f >> $PROJECT_FOLDER/data/taxonomy_binning/$PREFIX.bins.fa
+done
+```
+
+Then run kaiju (needs plenty of memory to load the nr database)
+```
+$PROJECT_FOLDER/data/kaiju/nodes.dmp \
+$PROJECT_FOLDER/data/kaiju/nr_euk/kaiju_db_nr_euk.fmi \
+$PROJECT_FOLDER/data/taxonomy_binning/${PREFIX}_BINS/${PREFIX}.bins.fa \
+${PREFIX}.kaiju.out \
+$PROJECT_FOLDER/data/taxonomy/$PREFIX
+```
+
+Taxon names can be added to the kaiju output using kaiju-addTaxonNames
+```shell
+kaiju-addTaxonNames -t $PROJECT_FOLDER/data/kaiju/nodes.dmp -n $PROJECT_FOLDER/data/kaiju/names.dmp -r superkingdom,phylum,class,order,family,genus,species -i ${PREFIX}.kaiju.out -o ${PREFIX}.names.out
 ```
 
 ### Add protein names to the bins
@@ -200,19 +216,110 @@ kaiju-addTaxonNames -t nodes.dmp -n names.dmp -r superkingdom,phylum,class,order
 I've done this by using sqlite - it may not be the best method but it is fairly speedy and easy to implement. 
 There is a slight problem that a sqlite query can have a maximum of 9999 'or' statements.
 
-
 #### Set-up database
 ```shell
+cd $PROJECT_FOLDER/data/kaiju/nr_euk
 zgrep ">.*?\[" -oP nr.gz |sed 's/..$//'|sed 's/>//'|sed 's/MULTIGENE: //'|sed 's/ /|/' >nr.names
 sqlite3 nr.db "CREATE TABLE nr(acc TEXT PRIMARY KEY, desc TEXT)"
 sqlite3 -separator "|" nr.db ".import nr.names nr" 2>/dev/null
 ```
+
 #### Extract protein names
 ```shell
-awk -F"\t" '{print $6}' OFS="," all.kaiju.out|sed 's/.$//'|awk -F"," '{ for(i = 1; i <= NF; i++) { print "acc=\x27"$i"\x27 OR"; } }'|sed '$s/OR//'|split -l 9999
+# create multiple sql scripts with a maximum of 9999 terms
+cd $PROJECT_FOLDER/data/taxonomy/$PREFIX
+awk -F"\t" '{print $6}' OFS="," ${PREFIX}.kaiju.out|sed 's/.$//'|awk -F"," '{ for(i = 1; i <= NF; i++) { print "acc=\x27"$i"\x27 OR"; } }'|sed '$s/OR//'|split -l 9999
+
+# loop through and execute the list of sql scripts
 for f in x*; do 
  sed -i -e '$s/OR//' $f
  sed -i -e '1s/acc/SELECT * FROM nr WHERE acc/' $f
- sqlite3 nr.db <$f >> all.prots.out
+ sqlite3 nr.db <$f >> ${PREFIX}.prots.out
 done
+```
+
+## Count bin hits
+
+### Generate gff file for all bins
+```shell
+cd $PROJECT_FOLDER/data/taxonomy_binning/${PREFIX}_BINS
+$PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/awk_bin_to_gff.sh$PREFIX.bins.fa > $PREFIX.gff 
+```
+
+### count overlapping features
+
+```shell
+for BAM in $PROJECT_FOLDER/data/sorted/$P1*; do
+  sbatch --mem 40000 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_bam_count.sh \
+  $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm \
+  $BAM \
+  $PROJECT_FOLDER/data/taxonomy/$PREFIX/${PREFIX}.gff \
+  $PROJECT_FOLDER/data/taxonomy/$PREFIX/map
+done
+```
+
+#### Remove unused fields from cov output files 
+
+```shell
+cd $PROJECT_FOLDER/data/taxonomy/$PREFIX/map
+for F in *.cov; do
+  O=$(sed 's/_.*_L/_L/' <<<$F|sed 's/_1\.cov/.tab/')
+  awk -F"\t" '{
+   sub("ID=","",$(NF-1));
+   sub(/fa\..*/,"fa",$(NF-1));
+   print $1,$(NF-1),$NF 
+  }' OFS="\t" $F > $O &
+done 
+```
+
+### Merge count data
+
+```R
+library(data.table)
+
+# location of files to load (assuming run after previuos step without leaving directory)
+tmpdir <- "." # paste0(args[1],"/")
+
+# load count files
+qq <- lapply(list.files(tmpdir ,"*.tab",full.names=T),function(x) fread(x,sep="\t"))
+
+# get the sample names  
+names <- sub("_1\\.tab","",list.files(tmpdir ,"*.tab",full.names=F,recursive=F))
+
+# aggregate by domain
+qa <- lapply(qq,function(DT) DT[,sum(V3),by = V2])
+
+# apply names to appropriate list columns (enables easy joining of all count tables)
+qa <- lapply(seq(1:length(qa)),function(i) {X<-qa[[i]];colnames(X)[2] <- names[i];return(X)})
+
+# merge count tables (full join)
+countData <- Reduce(function(...) {merge(..., all = TRUE)}, qa)
+
+# rename first column
+setnames(countData,"V2","Bin")
+
+# NA to 0
+countData <- countData[,lapply(.SD, function(x) {x[is.na(x)] <- "0" ; x})]
+
+# write table
+fwrite(countData,"countData",sep="\t",quote=F,row.names=F,col.names=T)
+
+# without aggregation
+qa <- qq
+
+# apply names to appropriate list columns (enables easy joining of all count tables)
+qa <- lapply(seq(1:length(qa)),function(i) {X<-qa[[i]];colnames(X)[3] <- names[i];return(X)})
+
+# merge contig and bin names
+qa <- lapply(seq(1:length(qa)),function(i) {X<-qa[[i]];X[,sub_bin:=paste(V2,V1,sep=".")];X[,c("V1","V2"):=NULL];return(X)})
+
+# merge count tables (full join)
+countData <- Reduce(function(...) {merge(..., all = TRUE)}, qa)
+
+# NA to 0
+countData <- countData[,lapply(.SD, function(x) {x[is.na(x)] <- "0" ; x})]
+
+# write table
+fwrite(countData,"sub_bin.countData",sep="\t",quote=F,row.names=F,col.names=T)
+
 ```
