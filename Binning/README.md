@@ -155,7 +155,7 @@ Rscript subbin_parser.R reduced.txt tab_file_location $PREFIX
 Taxonomy binning uses a mashup of various pipelines. I did try and implement Anvio, but it is vastly too slow (and memory hungry) for the size of data involved in soil metegenomics.  
 
 The binning is done by Metabat which requires sorted bam files (as produced above).  
-Note - cluster jobs are written for slurm not grid engine
+![#f03c15](https://placehold.it/15/f03c15/000000?text=+) Note - cluster jobs are written for slurm not grid engine
 
 ## Sort bam files
 ```shell
@@ -236,6 +236,32 @@ for f in x*; do
  sed -i -e '1s/acc/SELECT * FROM nr WHERE acc/' $f
  sqlite3 nr.db <$f >> ${PREFIX}.prots.out
 done
+```
+
+### Merge bin taxonomy and protein names
+
+```R
+library(tidyverse)
+library(data.table)
+
+PREFIX=xxx
+
+dat <- fread(paste0(PREFIX,".names.out"),fill=T,sep="\t")
+dat[,c("bin","contig"):=tstrsplit(V2,".fa.",fixed=T)]
+dat[,acc:=sub(",.*","",V6)]
+dat[,c("kingdom","phylum","class","order","family","genus","species"):=tstrsplit(V8,";",fixed=T)]
+
+prot <- fread(paste0(PREFIX,".prots.out"),header=F)
+setnames(prot,c("acc","protein"))
+prot <- unique(prot)
+dat <- prot[dat,on=c("acc==acc")]
+
+dat[,(5:10):=NULL]
+
+setnames(dat,c("V1","V2"),c("assigned","fullname"))
+
+fwrite(dat,paste0(PREFIX,".taxoprot.txt"),quote=F,row.names=F,col.names=T)
+
 ```
 
 ## Count bin hits
