@@ -272,7 +272,7 @@ fwrite(dat,paste0(PREFIX,".taxoprot.txt"),quote=F,row.names=F,col.names=T)
 ### Generate gff file for all bins
 ```shell
 cd $PROJECT_FOLDER/data/taxonomy_binning/${PREFIX}_BINS
-$PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/awk_bin_to_gff.sh$PREFIX.bins.fa > $PREFIX.gff 
+$PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/awk_bin_to_gff.sh  < $PREFIX.bins.fa > $PREFIX.gff &
 ```
 
 ### count overlapping features
