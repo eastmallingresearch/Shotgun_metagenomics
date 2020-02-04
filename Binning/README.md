@@ -237,7 +237,7 @@ awk -F"\t" '{print $6}' OFS="," ${PREFIX}.kaiju.out|sed 's/.$//'|awk -F"," '{ fo
 for f in x*; do 
  sed -i -e '$s/OR//' $f
  sed -i -e '1s/acc/SELECT * FROM nr WHERE acc/' $f
- sqlite3 nr.db <$f >> ${PREFIX}.prots.out
+ sqlite3 $PROJECT_FOLDER/data/kaiju/nr_euk/nr.db <$f >> ${PREFIX}.prots.out
 done
 ```
 
