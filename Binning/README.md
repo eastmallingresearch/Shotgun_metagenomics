@@ -192,7 +192,7 @@ kaiju-makedb -s nr_euk
 Second step is to concatenate the bins, capturing bin name.
 ```shell
 
-for f in $PROJECT_FOLDER/data/taxonomy_binning/$PREFIX_BINS/*.fa; do
+for f in $PROJECT_FOLDER/data/taxonomy_binning/${PREFIX}_BINS/bin*.fa; do
  sed -e "s/>k/>${f}.k/" $f >> $PROJECT_FOLDER/data/taxonomy_binning/$PREFIX.bins.fa
 done
 ```
