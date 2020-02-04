@@ -197,9 +197,11 @@ for f in $PROJECT_FOLDER/data/taxonomy_binning/${PREFIX}_BINS/bin*.fa; do
 done
 ```
 
-Then run kaiju (needs plenty of memory to load the nr database)
+Then run kaiju (needs plenty of memory to load the nr database)  
+The sub_kaiju script is hard coded to use 20 processors for classification
+
 ```
-sbatch --mem=120000 -p medium $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju.sh \
+sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju.sh \
 $PROJECT_FOLDER/data/kaiju/nodes.dmp \
 $PROJECT_FOLDER/data/kaiju/nr_euk/kaiju_db_nr_euk.fmi \
 $PROJECT_FOLDER/data/taxonomy_binning/${PREFIX}_BINS/${PREFIX}.bins.fa \
