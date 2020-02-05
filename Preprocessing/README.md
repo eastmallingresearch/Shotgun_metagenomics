@@ -60,7 +60,7 @@ rRNA filtering; k=31 t=4
 
 #### Human contaminant removal (BBMap)
 ```shell
-for FR in $PROJECT_FOLDER/data/filtered/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz; do
+for FR in $PROJECT_FOLDER/data/filtered/*_1*.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
   $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c filter -p bbmap \
   $PROJECT_FOLDER/metagenomics_pipeline/common/resources/contaminants/bbmap_human \
@@ -79,7 +79,7 @@ done
 ```
 ##### slurm version
 ```shell
-for FR in $PROJECT_FOLDER/data/filtered/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz; do
+for FR in $PROJECT_FOLDER/data/filtered/*_1*.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
   sbatch --mem=40000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_bbmap.sh \
   $PROJECT_FOLDER/metagenomics_pipeline/common/resources/contaminants/bbmap_human \
