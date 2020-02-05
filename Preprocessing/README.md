@@ -37,6 +37,23 @@ for FR in $PROJECT_FOLDER/data/trimmed/*_1.fq.gz; do
   false
 done  
 ```
+##### Slurmyfied verion
+```shell
+for FR in $PROJECT_FOLDER/data/trimmed/*_1.fq.gz; do
+  RR=$(sed 's/_1/_2/' <<< $FR)
+  sbatch --mem=20000 -p medium -c 10 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/mega_duk.sh \
+  $PROJECT_FOLDER/metagenomics_pipeline/common/resources/adapters/truseq.fa \
+  $PROJECT_FOLDER/metagenomics_pipeline/common/resources/contaminants/phix_174.fa \
+  $PROJECT_FOLDER/metagenomics_pipeline/common/resources/contaminants/ribokmers.fa.gz \
+  $PROJECT_FOLDER/data/filtered \
+  $FR \
+  $RR \
+  false
+done 
+
+```
+
+
 bbduk command line arguments used:  
 adapter removal forward; ktrim=l k=23 mink=11 hdist=1 tpe tbo t=10
 adapter removal reverse; ktrim=r k=23 mink=11 hdist=1 tpe tbo t=10
