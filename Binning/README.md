@@ -154,8 +154,42 @@ Rscript subbin_parser.R reduced.txt tab_file_location $PREFIX
 
 Taxonomy binning uses a mashup of various pipelines. I did try and implement Anvio, but it is vastly too slow (and memory hungry) for the size of data involved in soil metegenomics.  
 
-The binning is done by Metabat which requires sorted bam files (as produced above).  
+The binning is done by Metabat which requires sorted bam files (as produced above).   
 ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) Note - cluster jobs are written for slurm not grid engine
+
+Kaiju by itself maybe of use for binning raw (or filtered) reads - use as below
+
+## Kaiju binning and taxonomy
+
+Kaiju will need setting up first - details below
+
+First step is to set-up an nr database
+
+(The database is stored in $PROJECT_FOLDER/data/kaiju for the following scripts)
+```shell
+kaiju-makedb -s nr_euk 
+```
+
+Second step is to concatenate the bins, capturing bin name.
+```shell
+for f in $PROJECT_FOLDER/data/taxonomy_binning/${PREFIX}_BINS/bin*.fa; do
+ sed -e "s/>k/>${f}.k/" $f >> $PROJECT_FOLDER/data/taxonomy_binning/$PREFIX.bins.fa
+done
+```
+
+Then to run kaiju against paired end reads
+```shell
+sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju.sh \
+$PROJECT_FOLDER/data/kaiju/nodes.dmp \
+$PROJECT_FOLDER/data/kaiju/nr_euk/kaiju_db_nr_euk.fmi \
+${PREFIX}.kaiju.out \
+$PROJECT_FOLDER/data/taxonomy/$PREFIX \
+-z 20 -v \
+-i $FR \
+-j $RR
+```
+
+
 
 ## Sort bam files
 ```shell
@@ -182,25 +216,11 @@ $PROJECT_FOLDER/data/taxonomy_binning/${PREFIX}_BINS $BAMS
 
 ## Taxonomy assignment
 
-This is done using Kaiju. First step is to set-up an nr database
 
-(The database is stored in $PROJECT_FOLDER/data/kaiju for the following scripts)
-```shell
-kaiju-makedb -s nr_euk 
-```
-
-Second step is to concatenate the bins, capturing bin name.
-```shell
-
-for f in $PROJECT_FOLDER/data/taxonomy_binning/${PREFIX}_BINS/bin*.fa; do
- sed -e "s/>k/>${f}.k/" $f >> $PROJECT_FOLDER/data/taxonomy_binning/$PREFIX.bins.fa
-done
-```
-
-Then run kaiju (needs plenty of memory to load the nr database)  
+Kaiju needs plenty of memory to load the nr database 
 The sub_kaiju script is hard coded to use 20 processors for classification
 
-```
+```shell
 sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju.sh \
 $PROJECT_FOLDER/data/kaiju/nodes.dmp \
 $PROJECT_FOLDER/data/kaiju/nr_euk/kaiju_db_nr_euk.fmi \
