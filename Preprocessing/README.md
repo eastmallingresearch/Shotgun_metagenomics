@@ -52,8 +52,6 @@ for FR in $PROJECT_FOLDER/data/fastq/*_1.fq.gz; do
 done 
 
 ```
-
-
 bbduk command line arguments used:  
 adapter removal forward; ktrim=l k=23 mink=11 hdist=1 tpe tbo t=10
 adapter removal reverse; ktrim=r k=23 mink=11 hdist=1 tpe tbo t=10
@@ -79,6 +77,26 @@ for FR in $PROJECT_FOLDER/data/filtered/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz; 
   t=8
 done
 ```
+##### slurm version
+```shell
+for FR in $PROJECT_FOLDER/data/filtered/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz; do
+  RR=$(sed 's/_1/_2/' <<< $FR)
+  sbatch --mem=40000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_bbmap.sh \
+  $PROJECT_FOLDER/metagenomics_pipeline/common/resources/contaminants/bbmap_human \
+  $PROJECT_FOLDER/data/cleaned \
+  $FR \
+  $RR \
+  minid=0.95 \
+  maxindel=3 \
+  bwr=0.16 \
+  bw=12 \
+  quickmatch \
+  fast \
+  minhits=2 \
+  t=8
+done
+```
+
 #### Normalization and error correction (BBNorm)
 ```shell
 for FR in $PROJECT_FOLDER/data/cleaned/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cleaned.fq.gz; do
