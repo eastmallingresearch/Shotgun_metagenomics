@@ -179,16 +179,21 @@ done
 
 Then to run kaiju against paired end reads
 ```shell
+for FR in $PROJECT_FOLDER/data/cleaned/*_1*.fq.gz; do
+ RR=$(sed 's/_1/_2/' <<< $FR)
+S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $FR)
 sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju.sh \
-$PROJECT_FOLDER/data/kaiju/nodes.dmp \
-$PROJECT_FOLDER/data/kaiju/nr_euk/kaiju_db_nr_euk.fmi \
-${PREFIX}.kaiju.out \
-$PROJECT_FOLDER/data/taxonomy/$PREFIX \
--z 20 -v \
--i $FR \
--j $RR
+ $PROJECT_FOLDER/data/kaiju/nodes.dmp \
+ $PROJECT_FOLDER/data/kaiju/nr_euk/kaiju_db_nr_euk.fmi \
+ ${S}.kaiju.out \
+ $PROJECT_FOLDER/data/kaiju_taxonomy/ \
+ -z 20 -v \
+ -i $FR \
+ -j $RR
+done
 ```
 
+### Then do something else with the output
 
 
 ## Sort bam files
