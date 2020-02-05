@@ -39,7 +39,7 @@ done
 ```
 ##### Slurmyfied verion
 ```shell
-for FR in $PROJECT_FOLDER/data/trimmed/*_1.fq.gz; do
+for FR in $PROJECT_FOLDER/data/fastq/*_1.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
   sbatch --mem=20000 -p medium -c 10 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/mega_duk.sh \
   $PROJECT_FOLDER/metagenomics_pipeline/common/resources/adapters/truseq.fa \
