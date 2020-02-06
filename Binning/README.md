@@ -253,6 +253,9 @@ ${PREFIX}.kaiju.out \
 $PROJECT_FOLDER/data/taxonomy/$PREFIX \
 -e 100 -m 100 -E 0.0000000001 -z 20 -v \
 -i $PROJECT_FOLDER/data/taxonomy_binning/${PREFIX}_BINS/${PREFIX}.bins.fa
+
+# drop  various columns from the output
+awk -F"\t" '{print $1,$2,$4,$6,$8}' OFS="\t" < ATTINGHAM.kaiju.out >ATTINGHAM.k2.out
 ```
 
 Taxon names can be added to the kaiju output using kaiju-addTaxonNames
