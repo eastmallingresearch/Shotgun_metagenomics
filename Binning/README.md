@@ -196,6 +196,24 @@ done
 
 ### Then do something else with the output
 
+## Kraken
+
+```shell
+# refseq
+wget -c https://refdb.s3.climb.ac.uk/kraken2-microbial/hash.k2d &
+wget -c https://refdb.s3.climb.ac.uk/kraken2-microbial/opts.k2d &
+wget -c https://refdb.s3.climb.ac.uk/kraken2-microbial/taxo.k2d &
+
+# full 
+wget -c https://refdb.s3.climb.ac.uk/maxikraken2_1903_140GB/hash.k2d &
+wget -c https://refdb.s3.climb.ac.uk/maxikraken2_1903_140GB/opts.k2d &
+wget -c https://refdb.s3.climb.ac.uk/maxikraken2_1903_140GB/taxo.k2d &
+
+# build data base
+kraken-build --download-taxonomy --db kraken
+kraken-build --add-to-library nr.gz --db kraken
+
+```
 
 ## Sort bam files
 ```shell
@@ -208,7 +226,7 @@ done
 ```
 ## Run metabat
 
-I need to scriptify this ar some stage
+I need to scriptify this at some stage
 
 ```shell
 # get list of bam filed for each assembly
@@ -229,10 +247,12 @@ The sub_kaiju script is hard coded to use 20 processors for classification
 ```shell
 sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju.sh \
 $PROJECT_FOLDER/data/kaiju/nodes.dmp \
+$PROJECT_FOLDER/data/kaiju/names.dmp \
 $PROJECT_FOLDER/data/kaiju/nr_euk/kaiju_db_nr_euk.fmi \
-$PROJECT_FOLDER/data/taxonomy_binning/${PREFIX}_BINS/${PREFIX}.bins.fa \
 ${PREFIX}.kaiju.out \
-$PROJECT_FOLDER/data/taxonomy/$PREFIX
+$PROJECT_FOLDER/data/taxonomy/$PREFIX \
+-e 100 -m 100 -E 0.0000000001 -z 20 -v \
+-i $PROJECT_FOLDER/data/taxonomy_binning/${PREFIX}_BINS/${PREFIX}.bins.fa
 ```
 
 Taxon names can be added to the kaiju output using kaiju-addTaxonNames
