@@ -184,6 +184,7 @@ for FR in $PROJECT_FOLDER/data/cleaned/*_1*.fq.gz; do
 S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $FR)
 sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju.sh \
  $PROJECT_FOLDER/data/kaiju/nodes.dmp \
+ $PROJECT_FOLDER/data/kaiju/names.dmp \
  $PROJECT_FOLDER/data/kaiju/nr_euk/kaiju_db_nr_euk.fmi \
  ${S}.kaiju.out \
  $PROJECT_FOLDER/data/kaiju_taxonomy/ \
