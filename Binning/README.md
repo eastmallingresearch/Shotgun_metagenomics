@@ -385,11 +385,14 @@ fwrite(countData,"countData",sep="\t",quote=F,row.names=F,col.names=T)
 # without aggregation
 qa <- qq
 
-# apply names to appropriate list columns (enables easy joining of all count tables)
-qa <- lapply(seq(1:length(qa)),function(i) {X<-qa[[i]];colnames(X)[3] <- names[i];return(X)})
-
 # merge contig and bin names
 qa <- lapply(seq(1:length(qa)),function(i) {X<-qa[[i]];X[,sub_bin:=paste(V2,V1,sep=".")];X[,c("V1","V2"):=NULL];return(X)})
+
+# It's possible some of the sub bin names are duplicated...
+qa <- lapply(qq,function(DT) DT[,sum(V3),by = sub_bin])
+
+# apply names to appropriate list columns (enables easy joining of all count tables)
+qa <- lapply(seq(1:length(qa)),function(i) {X<-qa[[i]];colnames(X)[2] <- names[i];return(X)})
 
 # merge count tables (full join)
 countData <- Reduce(function(...) {merge(..., all = TRUE)}, qa)
