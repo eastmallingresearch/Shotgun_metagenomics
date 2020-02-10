@@ -170,14 +170,9 @@ First step is to set-up an nr database
 kaiju-makedb -s nr_euk 
 ```
 
-Second step is to concatenate the bins, capturing bin name.
-```shell
-for f in $PROJECT_FOLDER/data/taxonomy_binning/${PREFIX}_BINS/bin*.fa; do
- sed -e "s/>k/>${f}.k/" $f >> $PROJECT_FOLDER/data/taxonomy_binning/$PREFIX.bins.fa
-done
-```
+``
 
-Then to run kaiju against paired end reads
+Run kaiju against paired end reads
 ```shell
 for FR in $PROJECT_FOLDER/data/cleaned/*_1*.fq.gz; do
  RR=$(sed 's/_1/_2/' <<< $FR)
@@ -195,6 +190,22 @@ done
 ```
 
 ### Then do something else with the output
+Best bet is to use kaiju tools to create a table of counts at the species rank - this can then be manipulated in R  
+The kaiju2table program is fast.
+
+```shell
+for K in $PROJECT_FOLDER/data/kaiju_taxonomy/${P1}*.out; do
+S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $K)
+sbatch --mem=12000 -p short -c 1 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju_table.sh \
+ $PROJECT_FOLDER/data/kaiju/nodes.dmp \
+ $PROJECT_FOLDER/data/kaiju/names.dmp \
+ ${S}.kaiju.counts \
+ $PROJECT_FOLDER/data/kaiju_taxonomy/ \
+ $K  
+# kaiju2table -t $PROJECT_FOLDER/data/kaiju/nodes.dmp -n $PROJECT_FOLDER/data/kaiju/names.dmp -r species -l superkingdom,phylum,class,order,family,genus,species -o ${K}.counts $K &
+done
+```
+
 
 ## Kraken
 
