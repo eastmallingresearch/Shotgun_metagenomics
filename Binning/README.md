@@ -189,7 +189,7 @@ sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/script
 done
 ```
 
-### Then do something else with the output
+### Species counts
 Best bet is to use kaiju tools to create a table of counts at the species rank - this can then be manipulated in R  
 The kaiju2table program is fast.
 
