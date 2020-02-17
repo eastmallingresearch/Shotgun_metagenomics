@@ -200,10 +200,11 @@ sbatch --mem=12000 -p short -c 1 $PROJECT_FOLDER/metagenomics_pipeline/scripts/s
  $PROJECT_FOLDER/data/kaiju/nodes.dmp \
  $PROJECT_FOLDER/data/kaiju/names.dmp \
  ${S}.kaiju.counts \
- $PROJECT_FOLDER/data/kaiju_taxonomy/ \
+ $PROJECT_FOLDER/data/kaiju_results/ \
  $K  
-# kaiju2table -t $PROJECT_FOLDER/data/kaiju/nodes.dmp -n $PROJECT_FOLDER/data/kaiju/names.dmp -r species -l superkingdom,phylum,class,order,family,genus,species -o ${K}.counts $K &
 done
+
+# kaiju2table -t $PROJECT_FOLDER/data/kaiju/nodes.dmp -n $PROJECT_FOLDER/data/kaiju/names.dmp -r species -l superkingdom,phylum,class,order,family,genus,species -o ${K}.counts $K &
 ```
 
 
