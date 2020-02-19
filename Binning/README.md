@@ -403,6 +403,9 @@ qa <- qq
 # merge contig and bin names
 qa <- lapply(seq(1:length(qa)),function(i) {X<-qa[[i]];X[,sub_bin:=paste(V2,V1,sep=".")];X[,c("V1","V2"):=NULL];return(X)})
 
+#kaiju
+qa <- lapply(seq(1:length(qa)),function(i) {X<-qa[[i]];X[,sub_bin:=paste0(taxon_name,taxon_id)];X[,c("file","percent","taxon_name","taxon_id"):=NULL];return(X)})
+
 # It's possible some of the sub bin names are duplicated...
 qa <- lapply(qq,function(DT) DT[,sum(V3),by = sub_bin])
 
