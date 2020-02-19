@@ -376,6 +376,9 @@ qq <- lapply(list.files(tmpdir ,"*.tab",full.names=T),function(x) fread(x,sep="\
 # get the sample names  
 names <- sub("_1\\.tab","",list.files(tmpdir ,"*.tab",full.names=F,recursive=F))
 
+# kaiju taxonomy
+names<-sub("([A-Z0-9]*)(_N.*_L)(.)(.*)","\\1_\\3",list.files(tmpdir ,"A.*",full.names=F,recursive=F))
+
 # aggregate by domain
 qa <- lapply(qq,function(DT) DT[,sum(V3),by = V2])
 
