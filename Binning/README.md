@@ -207,6 +207,51 @@ done
 # kaiju2table -t $PROJECT_FOLDER/data/kaiju/nodes.dmp -n $PROJECT_FOLDER/data/kaiju/names.dmp -r species -l superkingdom,phylum,class,order,family,genus,species -o ${K}.counts $K &
 ```
 
+### Produce counts and taxonomy
+```R
+library(data.table)
+library(tidyverse)
+
+# location of files to load (assuming run after previuos step without leaving directory)
+tmpdir <- "." # paste0(args[1],"/")
+
+Site <- "Attingham"
+
+fn <- paste0("^",substr(Site,1,1),".*counts")
+
+# load count files
+qq <- lapply(list.files(tmpdir ,fn,full.names=T),function(x) fread(x,sep="\t"))
+
+# kaiju taxonomy
+names<-sub("([A-Z0-9]*)(_N.*_L)(.)(.*)","\\1_\\3",list.files(tmpdir ,fn,full.names=F,recursive=F))
+
+# merge contig and bin names
+qq <- lapply(seq(1:length(qq)),function(i) {X<-qq[[i]];X[,sub_bin:=paste0(taxon_name,taxon_id)];X[,c("file","percent","taxon_name","taxon_id"):=NULL];return(X)})
+
+# It's possible some of the sub bin names are duplicated...
+qq <- lapply(qq,function(DT) DT[,sum(reads),by = sub_bin])
+
+# apply names to appropriate list columns (enables easy joining of all count tables)
+qq <- lapply(seq(1:length(qq)),function(i) {X<-qq[[i]];colnames(X)[2] <- names[i];return(X)})
+
+# merge count tables (full join)
+countData <- Reduce(function(...) {merge(..., all = TRUE)}, qq)
+
+# NA to 0
+countData <- countData[,lapply(.SD, function(x) {x[is.na(x)] <- "0" ; x})]
+
+# add OTU column
+countData[,OTU:=paste0("OTU",1:nrow(countData))]
+
+# seperate into taxa and counts
+taxData <- separate(countData[,.(OTU,sub_bin)],col =2,into=c("kingdom","phylum","class","order","family","genus","species","GI"),sep=";") 
+countData[,sub_bin:=NULL]
+setcolorder(countData,"OTU")
+
+# write table
+fwrite(countData,paste0(Site,".countData"),sep="\t",quote=F,row.names=F,col.names=T)
+fwrite(taxData,paste0(Site,".taxData"),sep="\t",quote=F,row.names=F,col.names=T)
+```
 
 ## Kraken
 
