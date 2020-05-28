@@ -207,6 +207,9 @@ done
 # kaiju2table -t $PROJECT_FOLDER/data/kaiju/nodes.dmp -n $PROJECT_FOLDER/data/kaiju/names.dmp -r species -l superkingdom,phylum,class,order,family,genus,species -o ${K}.counts $K &
 ```
 
+### Correct counts with DiTASiC
+Something goes here...
+
 ### Produce counts and taxonomy
 ```R
 library(data.table)
