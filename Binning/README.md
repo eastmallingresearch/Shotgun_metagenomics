@@ -209,6 +209,8 @@ done
 
 ### Correct counts with DiTASiC
 Something goes here...
+It does - DisTASic is not going to work with Kaiju. But I may be able to adapt the model they use to apply to a protein database - won't be easy though.
+
 
 ### Produce counts and taxonomy
 ```R
