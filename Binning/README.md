@@ -211,6 +211,13 @@ done
 Something goes here...
 It does - DisTASic is not going to work with Kaiju. But I may be able to adapt the model they use to apply to a protein database - won't be easy though.
 
+Will need counts for all taxon entries, and how many are multi hits.
+```
+for K in $PROJECT_FOLDER/data/kaiju_taxonomy/${P1}*.out; do
+  S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $K)
+  awk -F"\t" '{print gsub(/,/,",",$5) "\t" $5}' < $K > ${S}.new_counts  
+done
+```
 
 ### Produce counts and taxonomy
 ```R
