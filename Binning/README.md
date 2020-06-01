@@ -235,7 +235,13 @@ foreach (keys %taxon_hash) {
   print "$_\t$taxon_hash{$_}\n" if $taxon_hash{$_}>0;
 }
 ```
-
+Then add them together
+```shell
+for f in *.new_counts; do
+  S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $K)
+  awk -F"\t" '{if($1>0){print $2}}' $f|./script.pl > ${S}.pcounts & 
+done
+```
 
 
 ### Produce counts and taxonomy
