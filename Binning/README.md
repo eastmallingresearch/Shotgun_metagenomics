@@ -238,8 +238,8 @@ foreach (keys %taxon_hash) {
 Then add them together
 ```shell
 for f in *.new_counts; do
-  S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $K)
-  awk -F"\t" '{if($1>0){print $2}}' $f|./script.pl > ${S}.pcounts & 
+  S=$(sed 's/\..*//' <<< $f)
+  awk -F"\t" '{if($1>0){print $2}}' $f|./test.pl > ${S}.pcounts & 
 done
 ```
 
