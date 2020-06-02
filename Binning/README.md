@@ -209,9 +209,10 @@ done
 
 ### Correct counts with DiTASiC
 Something goes here...
-It does - DisTASic is not going to work with Kaiju. But I may be able to adapt the model they use to apply to a protein database - won't be easy though.
+It does - DiTASic is not going to work with Kaiju. But I may be able to adapt the model they use to apply to a protein database - won't be easy though. In fact it is full of problems, giving up on the idea for now
 
-This step is necessary to get accurate abundance
+Will assign multimapping reads based on the proportion of uniqueliy mapped reads per taxon.
+
 
 Will need counts for all taxon entries, and which are multi hits.
 ```shell
@@ -220,9 +221,11 @@ for K in $PROJECT_FOLDER/data/kaiju_taxonomy/${P1}*.out; do
   awk -F"\t" '{print gsub(/,/,",",$5) "\t" $5}' < $K > ${S}.new_counts  
 done
 ```
+
 A quick perl script to add all taxons to a hash
 ```perl
 #!/usr/bin/perl -s -w
+use List::Util 'sum';
 my %taxon_hash; 
 while(<STDIN>) {
   chomp;
@@ -231,10 +234,14 @@ while(<STDIN>) {
     $taxon_hash{$_}++;
   }
 }
+
+my $taxon_sum = sum values %taxon_hash;
+
 foreach (keys %taxon_hash) {
-  print "$_\t$taxon_hash{$_}\n" if $taxon_hash{$_}>0;
+  print "$_\t$taxon_hash{$_}\n";
 }
 ```
+
 Then add them together
 ```shell
 for f in *.new_counts; do
@@ -242,6 +249,14 @@ for f in *.new_counts; do
   awk -F"\t" '{if($1>0){print $2}}' $f|./test.pl > ${S}.pcounts & 
 done
 ```
+Probably easier to get the totals without multi-hits as well
+```shell
+for f in *.new_counts; do
+  S=$(sed 's/\..*//' <<< $f)
+  awk -F"\t" '{if($1==1){print $2}}' $f|./test.pl > ${S}.ncounts & 
+done
+```
+
 
 
 ### Produce counts and taxonomy
