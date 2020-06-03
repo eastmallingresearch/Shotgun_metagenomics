@@ -241,22 +241,67 @@ foreach (keys %taxon_hash) {
   print "$_\t$taxon_hash{$_}\n";
 }
 ```
-
-Then add them together
+add them together
 ```shell
 for f in *.new_counts; do
   S=$(sed 's/\..*//' <<< $f)
   awk -F"\t" '{if($1>0){print $2}}' $f|./test.pl > ${S}.pcounts & 
 done
 ```
-Probably easier to get the totals without multi-hits as well
+get the totals without multi-hits as well
 ```shell
 for f in *.new_counts; do
   S=$(sed 's/\..*//' <<< $f)
   awk -F"\t" '{if($1==1){print $2}}' $f|./test.pl > ${S}.ncounts & 
 done
 ```
+Then add proportional values for each multi-hit to the totals (in R)
+```R
+library(data.table)
+library(mclapply)
+library(tidyverse)
 
+joinFun2 <- function(x) {
+  as.data.table(unlist(str_split(sub(",$","",x),",")))
+}
+
+del.rows <- function(DT, del.idxs) {           # pls note 'del.idxs' vs. 'keep.idxs'
+  keep.idxs <- setdiff(DT[, .I], del.idxs);  # select row indexes to keep
+  cols = names(DT);
+  DT.subset <- data.table(DT[[1]][keep.idxs]); # this is the subsetted table
+  setnames(DT.subset, cols[1]);
+  for (col in cols[2:length(cols)]) {
+    DT.subset[, (col) := DT[[col]][keep.idxs]];
+    DT[, (col) := NULL];  # delete
+  }
+  return(DT.subset);
+}
+
+file_suffix <- gsub("\\..*","",list.files(".",".*pcounts$",full.names=F,recursive=F))
+
+freadFun <- function(i) fread(paste0(i,".new_counts"))
+
+pcounts    <- lapply(file_suffix,function(i) fread(paste0(i,".pcounts"))) 
+ncounts    <- lapply(file_suffix,function(i) fread(paste0(i,".ncounts"))) 
+new_counts <- mclapply(file_suffix,freadFun,mc.cores=10)
+
+new_counts <- lapply(new_counts,function(DT) del.rows(DT,which(DT[,1]<2)))
+lapply(pcounts,function(DT) DT[,V1:=as.character(V1)])
+lapply(ncounts,function(DT) DT[,V1:=as.character(V1)])
+
+multi_hits <- mclapply(new_counts,function(DT){
+  Y<-apply(DT[,2],1,joinFun2)
+  invisible(lapply(seq_along(Y),function(i) Y[[i]][,Seq:=i]))
+  Reduce(function(...) {merge(..., all = TRUE)}, Y)
+},mc.cores=10)
+
+invisible(lapply(seq_along(multi_hits),function(i) {
+  X <- pcounts[[i]][multi_hits[[i]],on="V1"]
+  X[,prop:=V2/sum(V2),by=Seq]
+  X[,lapply(.SD,sum),by=V1,.SDcols="prop"]
+  ncounts[[i]][multi_counts[[i]],tot:=V2+prop,on="V1"]
+})
+```
 
 
 ### Produce counts and taxonomy
