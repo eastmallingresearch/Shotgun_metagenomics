@@ -255,7 +255,7 @@ for f in *.new_counts; do
   awk -F"\t" '{if($1==1){print $2}}' $f|./test.pl > ${S}.ncounts & 
 done
 ```
-Then add proportional values for each multi-hit to the totals (in R)
+Then add proportional values for each multi-hit to the totals (in R for easy multiprocessing - eats memory though)
 ```R
 library(data.table)
 library(mclapply)
