@@ -289,6 +289,7 @@ new_counts <- lapply(new_counts,function(DT) del.rows(DT,which(DT[,1]<2)))
 lapply(pcounts,function(DT) DT[,V1:=as.character(V1)])
 lapply(ncounts,function(DT) DT[,V1:=as.character(V1)])
 
+# this bit is going to be slow, even using mclapply
 multi_hits <- mclapply(new_counts,function(DT){
   Y<-apply(DT[,2],1,joinFun2)
   invisible(lapply(seq_along(Y),function(i) Y[[i]][,Seq:=i]))
