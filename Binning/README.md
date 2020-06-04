@@ -258,10 +258,9 @@ done
 Then add proportional values for each multi-hit to the totals (in R for easy multiprocessing - eats memory though)
 ```R
 library(data.table)
-library(parallel)
+#   library(parallel)
 library(tidyverse)
 
-# delete rows by reference
 del.rows <- function(DT, del.idxs) {           # pls note 'del.idxs' vs. 'keep.idxs'
   keep.idxs <- setdiff(DT[, .I], del.idxs);  # select row indexes to keep
   cols = names(DT);
@@ -274,40 +273,37 @@ del.rows <- function(DT, del.idxs) {           # pls note 'del.idxs' vs. 'keep.i
   return(DT.subset);
 }
 
-# fread function for new_counts - autostart may need changing dependent on first line with 20 multi hits
-freadFun <- function(i) fread(paste0(i,".new_counts"),fill=T,autostart = 350)
-
-# get file suffixes
 file_suffix <- gsub("\\..*","",list.files(".",".*pcounts$",full.names=F,recursive=F))
 
-# load data
+freadFun <- function(i) fread(cmd=paste0("cat header.txt ",i,".new_counts"),fill=T,header=T)
+
 pcounts    <- lapply(file_suffix,function(i) fread(paste0(i,".pcounts"))) 
 ncounts    <- lapply(file_suffix,function(i) fread(paste0(i,".ncounts"))) 
-new_counts <- mclapply(file_suffix,freadFun,mc.cores=10)
-#new_counts <- lapply(file_suffix,freadFun)
+# new_counts <- mclapply(file_suffix,freadFun,mc.cores=10)
+fwrite(as.data.table(t(as.data.table(paste0("V",1:23)))),"header.txt",sep=",")
+new_counts <- lapply(file_suffix,freadFun)
 
-# modify data and add sequence number to new_counts
-new_counts <- lapply(new_counts,function(DT) del.rows(DT,which(DT[,1]<2)))
+new_counts <- lapply(new_counts,function(DT) del.rows(DT,c(1,which(DT[,1]<2))))
 del_cols <- lapply(new_counts,function(DT)names(DT)[c(1,length(names(DT)))])
-invisible(lapply(seq_along(new_counts),function(i){
-  new_counts[[i]][,(del_cols[[i]]):=NULL];
-  new_counts[[i]][,seq:=(1:nrow(new_counts[[i]]))]
-}))
+invisible(lapply(seq_along(new_counts),function(i){new_counts[[i]][,(del_cols[[i]]):=NULL];new_counts[[i]][,seq:=(1:nrow(new_counts[[i]]))]}))
 lapply(pcounts,function(DT) DT[,V1:=as.character(V1)])
 lapply(ncounts,function(DT) DT[,V1:=as.character(V1)])
 
-# melt the data and remove NA values
 multi_hits <- lapply(new_counts,melt,id.vars="seq")
 invisible(lapply(multi_hits,function(DT){DT[,variable:=NULL];DT[,value:=as.factor(value)];setnames(DT,"value","V1")}))
-multi_hits <- lapply(multi_hits,function(DT) DT[complete.cases(DT),])
+multi_hits <- lapply(multi_hits,function(DT) del.rows(DT,which(DT[,2]=="")))
 
-# calculate the proportional values for each multi-hit and add them to the ncounts values 
-invisible(lapply(seq_along(multi_hits),function(i) {
+final_counts <- lapply(seq_along(multi_hits),function(i) {
   X <- pcounts[[i]][multi_hits[[i]],on="V1"]
   X[,prop:=V2/sum(V2),by=seq]
   X<- X[,lapply(.SD,sum),by=V1,.SDcols="prop"]
-  ncounts[[i]][X,tot:=V2+prop,on="V1"]
-}))
+  X <- merge(X, ncounts[[i]], all=TRUE)
+  X[,tot:=rowSums(.SD, na.rm = TRUE), .SDcols =c("V2","prop")]
+  #ncounts[[i]][X,tot:=V2+prop,on="V1"]
+})
+
+lapply(seq_along(final_counts),function(i) fwrite(final_counts[[i]],paste0(file_suffix[[i]],".corrected_counts"),sep="\t"))
+
 ```
 
 
