@@ -312,45 +312,41 @@ lapply(seq_along(final_counts),function(i) fwrite(final_counts[[i]],paste0(file_
 library(data.table)
 library(tidyverse)
 
-# location of files to load (assuming run after previuos step without leaving directory)
-tmpdir <- "." # paste0(args[1],"/")
-
-Site <- "Attingham"
-
-fn <- paste0("^",substr(Site,1,1),".*counts")
+file_suffix <- gsub("\\..*","",list.files(".",".*corrected_counts$",full.names=F,recursive=F))
 
 # load count files
-qq <- lapply(list.files(tmpdir ,fn,full.names=T),function(x) fread(x,sep="\t"))
-
-# kaiju taxonomy
-names<-sub("([A-Z0-9]*)(_N.*_L)(.)(.*)","\\1_\\3",list.files(tmpdir ,fn,full.names=F,recursive=F))
-
-# merge contig and bin names
-qq <- lapply(seq(1:length(qq)),function(i) {X<-qq[[i]];X[,sub_bin:=paste0(taxon_name,taxon_id)];X[,c("file","percent","taxon_name","taxon_id"):=NULL];return(X)})
-
-# It's possible some of the sub bin names are duplicated...
-qq <- lapply(qq,function(DT) DT[,sum(reads),by = sub_bin])
+qq <- lapply(file_suffix,function(i) fread(paste0(i,".corrected_counts"))) 
 
 # apply names to appropriate list columns (enables easy joining of all count tables)
-qq <- lapply(seq(1:length(qq)),function(i) {X<-qq[[i]];colnames(X)[2] <- names[i];return(X)})
-
+invisible(lapply(seq_along(qq),function(i) setnames(qq[[i]],"tot",file_suffix[i])))
+invisible(lapply(qq,function(DT)DT[,c("prop","V2"):=NULL]))
 # merge count tables (full join)
 countData <- Reduce(function(...) {merge(..., all = TRUE)}, qq)
 
 # NA to 0
 countData <- countData[,lapply(.SD, function(x) {x[is.na(x)] <- "0" ; x})]
+# 
+# # add OTU column
+# countData[,OTU:=paste0("OTU",1:nrow(countData))]
+# 
+# count_cols <- names(countData)[-1]
+# countData[,(count_cols):=lapply(.SD,as.numeric),.SDcols=count_cols]
+setnames(countData,"V1","taxon_id")
 
-# add OTU column
-countData[,OTU:=paste0("OTU",1:nrow(countData))]
+# load taxonomy data (and false counts)
+qq <- lapply(file_suffix,function(i) fread(paste0(i,".kaiju.counts"))) 
+invisible(lapply(qq,function(DT)DT[,c("file","percent","reads"):=NULL]))
 
-# seperate into taxa and counts
-taxData <- separate(countData[,.(OTU,sub_bin)],col =2,into=c("kingdom","phylum","class","order","family","genus","species","GI"),sep=";") 
-countData[,sub_bin:=NULL]
-setcolorder(countData,"OTU")
+taxData <- Reduce(function(...) {merge(..., all = TRUE)}, qq)
+taxData[,taxon_id:=as.character(taxon_id)]
+fwrite(taxData,"taxData.txt",sep=";",quote=F,row.names=F,col.names=F)
+fread("taxData.txt",fill=T)
+taxData[,V9:=NULL]
+setnames(taxData,c("taxon_id","kingdom","phylum","class","order","family","genus","species"))
+fwrite(taxData,"taxData.txt",sep=";",quote=F)
 
-# write table
-fwrite(countData,paste0(Site,".countData"),sep="\t",quote=F,row.names=F,col.names=T)
-fwrite(taxData,paste0(Site,".taxData"),sep="\t",quote=F,row.names=F,col.names=T)
+fwrite(countData,paste0("countData"),sep="\t",quote=F,row.names=F,col.names=T)
+
 ```
 
 ## Kraken
