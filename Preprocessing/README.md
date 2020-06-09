@@ -132,10 +132,12 @@ Or using Carnelian
 ```shell
 for FR in $PROJECT_FOLDER/data/cleaned/*_1.*; do
   RR=$(sed 's/_1/_2/' <<< $FR)
+  S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $FR)
   sbatch --mem=10000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_merge.sh \
   $PROJECT_FOLDER/data/merged \
   $FR \
-  $RR
+  $RR \
+  $S
 done
 ```
 
