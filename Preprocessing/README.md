@@ -128,6 +128,18 @@ for FR in $PROJECT_FOLDER/data/cleaned/*_1.*; do
 done
 ```
 
+Or using Carnelian
+```shell
+for FR in $PROJECT_FOLDER/data/cleaned/*_1.*; do
+  RR=$(sed 's/_1/_2/' <<< $FR)
+  sbatch --mem=10000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_merge.sh \
+  $PROJECT_FOLDER/data/merged \
+  $FR \
+  $RR
+done
+```
+
+
 #### Partition reads (Clumpify)
 ```shell
 for UR in $PROJECT_FOLDER/data/merged/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cleaned.fq.gz.corrected.fq.gz.unmerged.fq.gz; do
