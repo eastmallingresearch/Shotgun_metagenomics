@@ -114,15 +114,16 @@ done
 ```
 #### Paired read merge (BBMerge)
 ```shell
-for FR in $PROJECT_FOLDER/data/corrected/*_1.fq.gz.trimmed.fq.gz.filtered.fq.gz.cleaned.fq.gz.corrected.fq.gz; do
+for FR in $PROJECT_FOLDER/data/cleaned/*_1.*; do
   RR=$(sed 's/_1/_2/' <<< $FR)
-  $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c merge -p bbmerge-auto \
+  #$PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c merge -p bbmerge-auto \
+  sbatch --mem=40000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_bbmerge_auto.sh \
   $PROJECT_FOLDER/data/merged \
   $FR \
   $RR  \
   rem k=62 \
   extend2=50 \
-  t=12 \
+  t=10 \
   vstrict
 done
 ```
