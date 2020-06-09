@@ -150,6 +150,49 @@ Parse the tab files to create countData matrix
 Rscript subbin_parser.R reduced.txt tab_file_location $PREFIX
 ```
 
+## Asembly free functional binning
+Carnelian might work
+
+### Installing Carnelian
+```shell
+conda install -c conda-forge vowpalwabbit
+pip install -U scikit-learn
+
+git clone https://github.com/snz20/carnelian
+cd carnelian/util/ext
+tar -zxf gdl-1.1.tar.gz
+cd gdl-1.1
+sh autogen.sh
+./configure 
+make && make install
+cd ../..
+make
+```
+
+### Get pre-built model (vowpalwrabit 8.11)
+```shell
+# prebuilt models
+wget http://bergerlab-downloads.csail.mit.edu/carnelian/EC-2010-DB-model.tar.gz &
+wget http://bergerlab-downloads.csail.mit.edu/carnelian/cog-model.tar.gz &
+```
+
+### run annotation
+```shell
+MODEL=$PROJECT_FOLDER/metagenomics_pipeline/common/functional-analysis/carnelian/models/EC-2010-DB-model
+for MR in $PROJECT_FOLDER/data/nmerged/*; do
+  S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $MR)
+  sbatch --mem=10000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_carnelian_annotate.sh \
+  $PROJECT_FOLDER/data/carnelian \
+  $MR \
+  $S \
+  $MODEL
+done
+```
+
+
+
+
+
 # Taxonomy binning
 
 Taxonomy binning uses a mashup of various pipelines. I did try and implement Anvio, but it is vastly too slow (and memory hungry) for the size of data involved in soil metegenomics.  
