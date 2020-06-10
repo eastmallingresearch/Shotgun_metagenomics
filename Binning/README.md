@@ -176,22 +176,47 @@ wget http://bergerlab-downloads.csail.mit.edu/carnelian/EC-2010-DB-model.tar.gz 
 wget http://bergerlab-downloads.csail.mit.edu/carnelian/cog-model.tar.gz &
 ```
 
-### run annotation
+## build model database
 ```shell
-MODEL=$PROJECT_FOLDER/metagenomics_pipeline/common/functional-analysis/carnelian/models/EC-2010-DB-model
-for MR in $PROJECT_FOLDER/data/fasta/*; do
-  S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $MR)
-  sbatch --mem=80000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_carnelian_annotate.sh \
-  $PROJECT_FOLDER/data/carnelian \
-  $MR \
-  $S \
-  $MODEL
-done
+./carnelian.py train -k 8 --num_hash 4 -l 30 -c 5 data/EC-2010-DB models
 ```
 
+### run annotation
 
+carnelian searches for fasta files in a directory (files must have .fasta file type)
 
+```shell
+# convert fq 2 fa
+for FR in $PROJECT_FOLDER/data/merged/*; do
+  S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $FR)
+  sbatch --mem=10000 -p short -c 1 $PROJECT_FOLDER/metagenomics_pipeline/common/scripts/sub_fq_2_fa.sh \
+  $PROJECT_FOLDER/data/fasta \
+  $FR \
+  $RR \
+  $S -n -z
+done
 
+# move files into unique folders
+cd $PROJECT_FOLDER/data/fasta
+for f in *; do
+ S=$(sed 's/_.*//' <<<$f)
+ mkdir $S
+ mv $f $S/.
+done
+
+# set model location
+MODEL=$PROJECT_FOLDER/metagenomics_pipeline/common/functional-analysis/carnelian/models/EC-2010-DB
+
+# run annotation pipeline
+for DIR in $PROJECT_FOLDER/data/fasta/*/; do
+  S=$(sed 's/fasta/carnelian/' <<< $DIR)
+  sbatch --mem=80000 -p long -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_carnelian_annotate.sh \
+  $S \
+  $DIR \
+  $MODEL \
+  -k 8 -n 20
+done
+```
 
 # Taxonomy binning
 
