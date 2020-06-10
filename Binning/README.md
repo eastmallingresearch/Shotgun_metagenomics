@@ -179,9 +179,9 @@ wget http://bergerlab-downloads.csail.mit.edu/carnelian/cog-model.tar.gz &
 ### run annotation
 ```shell
 MODEL=$PROJECT_FOLDER/metagenomics_pipeline/common/functional-analysis/carnelian/models/EC-2010-DB-model
-for MR in $PROJECT_FOLDER/data/nmerged/*; do
+for MR in $PROJECT_FOLDER/data/fasta/*; do
   S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $MR)
-  sbatch --mem=10000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_carnelian_annotate.sh \
+  sbatch --mem=80000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_carnelian_annotate.sh \
   $PROJECT_FOLDER/data/carnelian \
   $MR \
   $S \
