@@ -240,41 +240,25 @@ Then combine counts into a countData object
 library(data.table)
 library(tidyverse)
 
-file_suffix <- gsub("\\..*","",list.files(".",".*corrected_counts$",full.names=F,recursive=F))
+myfiles <- list.files(".",".*counts$",full.names=F,recursive=F)
 
 # load count files
-qq <- lapply(file_suffix,function(i) fread(paste0(i,".corrected_counts"))) 
+qq <- lapply(myfiles,fread) 
 
 # apply names to appropriate list columns (enables easy joining of all count tables)
-invisible(lapply(seq_along(qq),function(i) setnames(qq[[i]],"tot",file_suffix[i])))
-invisible(lapply(qq,function(DT)DT[,c("prop","V2"):=NULL]))
+invisible(lapply(seq_along(qq),function(i) setnames(qq[[i]],"V2",gsub("_.*","",myfiles[[i]]))))
+
 # merge count tables (full join)
 countData <- Reduce(function(...) {merge(..., all = TRUE)}, qq)
 
 # NA to 0
 countData <- countData[,lapply(.SD, function(x) {x[is.na(x)] <- "0" ; x})]
-# 
-# # add OTU column
-# countData[,OTU:=paste0("OTU",1:nrow(countData))]
-# 
-# count_cols <- names(countData)[-1]
-# countData[,(count_cols):=lapply(.SD,as.numeric),.SDcols=count_cols]
-setnames(countData,"V1","taxon_id")
 
-# load taxonomy data (and false counts)
-qq <- lapply(file_suffix,function(i) fread(paste0(i,".kaiju.counts"))) 
-invisible(lapply(qq,function(DT)DT[,c("file","percent","reads"):=NULL]))
+# set the names
+setnames(countData,"V1","EC")
 
-taxData <- Reduce(function(...) {merge(..., all = TRUE)}, qq)
-taxData[,taxon_id:=as.character(taxon_id)]
-fwrite(taxData,"taxData.txt",sep=";",quote=F,row.names=F,col.names=F)
-fread("taxData.txt",fill=T)
-taxData[,V9:=NULL]
-setnames(taxData,c("taxon_id","kingdom","phylum","class","order","family","genus","species"))
-fwrite(taxData,"taxData.txt",sep=";",quote=F)
-
-fwrite(countData,paste0("countData"),sep="\t",quote=F,row.names=F,col.names=T)
-
+# write the final table
+fwrite(countData,"countData",sep="\t",quote=F,col.names=T)
 ```
 
 
