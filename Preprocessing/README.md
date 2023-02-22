@@ -24,20 +24,7 @@ rRNA removal is probably best left for metatranscriptomic data. The final false 
 
 #### Adapter/phix/rRNA removal
 Runs all three of the options in "Filtering full options" shown at bottom
-```shell
-for FR in $PROJECT_FOLDER/data/trimmed/*_1.fq.gz; do
-  RR=$(sed 's/_1/_2/' <<< $FR)
-  $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c MEGAFILT \
-  $PROJECT_FOLDER/metagenomics_pipeline/common/resources/adapters/truseq.fa \
-  $PROJECT_FOLDER/metagenomics_pipeline/common/resources/contaminants/phix_174.fa \
-  $PROJECT_FOLDER/metagenomics_pipeline/common/resources/contaminants/ribokmers.fa.gz \
-  $PROJECT_FOLDER/data/filtered \
-  $FR \
-  $RR \
-  false
-done  
-```
-##### Slurmyfied verion
+
 ```shell
 for FR in $PROJECT_FOLDER/data/fastq/*_1.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
@@ -59,25 +46,12 @@ phix filtering; k=31 hdist=1 t=4
 rRNA filtering; k=31 t=4 
 
 #### Human contaminant removal (BBMap)
+First need to index the genome
+
 ```shell
-for FR in $PROJECT_FOLDER/data/filtered/*_1*.fq.gz; do
-  RR=$(sed 's/_1/_2/' <<< $FR)
-  $PROJECT_FOLDER/metagenomics_pipeline/scripts/PIPELINE.sh -c filter -p bbmap \
-  $PROJECT_FOLDER/metagenomics_pipeline/common/resources/contaminants/bbmap_human \
-  $PROJECT_FOLDER/data/cleaned \
-  $FR \
-  $RR \
-  minid=0.95 \
-  maxindel=3 \
-  bwr=0.16 \
-  bw=12 \
-  quickmatch \
-  fast \
-  minhits=2 \
-  t=8
-done
+bbmap.sh ref=hg19_main_mask_ribo_animal_allplant_allfungus.fa -Xmx23g
 ```
-##### slurm version
+
 ```shell
 for FR in $PROJECT_FOLDER/data/filtered/*_1*.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
