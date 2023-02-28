@@ -464,8 +464,20 @@ fwrite(countData,paste0("countData"),sep="\t",quote=F,row.names=F,col.names=T)
 
 ```
 
-```sql
+Using sql is one way of doing this - need to download accesssionsTaxa from ncbi (or possibly just names/nodes, but these will need to be imported into sql)  
 
+```sql
+WITH RECURSIVE
+  taxonomy(i) AS (
+    VALUES(x)
+    UNION
+    SELECT parent FROM nodes,taxonomy
+    WHERE nodes.id = taxonomy.i
+  )
+  SELECT nodes.rank,nodes.id,name FROM nodes
+  INNER JOIN names ON 
+  nodes.id = names.id
+  WHERE nodes.id IN taxonomy AND names.scientific=1;
 
 ```
 
