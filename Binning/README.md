@@ -419,6 +419,9 @@ lapply(seq_along(final_counts),function(i) fwrite(final_counts[[i]],paste0(file_
 ```
 
 ### Produce counts and taxonomy
+
+This needs editing, the taxonomy is not correct. It uses the output from Kaiju to assign the taxonomy - this is not complete as it excludes various taxa. Possibly only assignes to species levels, rather than higher taxonomic ranks. Will need to assign taxonomy directly from the names.dmp file.
+
 ```R
 library(data.table)
 library(tidyverse)
@@ -448,6 +451,7 @@ setnames(countData,"V1","taxon_id")
 qq <- lapply(file_suffix,function(i) fread(paste0(i,".kaiju.counts"))) 
 invisible(lapply(qq,function(DT)DT[,c("file","percent","reads"):=NULL]))
 
+# the below does not find all the taxonomy included in the output.
 taxData <- Reduce(function(...) {merge(..., all = TRUE)}, qq)
 taxData[,taxon_id:=as.character(taxon_id)]
 fwrite(taxData,"taxData.txt",sep=";",quote=F,row.names=F,col.names=F)
@@ -457,6 +461,11 @@ setnames(taxData,c("taxon_id","kingdom","phylum","class","order","family","genus
 fwrite(taxData,"taxData.txt",sep=";",quote=F)
 
 fwrite(countData,paste0("countData"),sep="\t",quote=F,row.names=F,col.names=T)
+
+```
+
+```sql
+
 
 ```
 
