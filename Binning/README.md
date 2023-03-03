@@ -470,6 +470,7 @@ fwrite(countData,paste0("countData"),sep="\t",quote=F,row.names=F,col.names=T)
 Using sql is one way of doing this - need to download accesssionsTaxa from ncbi (or possibly just names/nodes, but these will need to be imported into sql)  
 
 ```sql
+# recursive query to get all parents of id
 WITH RECURSIVE
   taxonomy(i) AS (
     VALUES(x)
@@ -492,6 +493,7 @@ library(data.table)
 library(sqldf)
 
 countData <- fread("countData")
+
 
 query <- function(i){
   paste0("WITH RECURSIVE
@@ -539,6 +541,8 @@ fetch <- function(i){
 con <- DBI::dbConnect(RSQLite::SQLite(),"taxonomy.db",flags=SQLITE_RO)
 
 taxData <- rbindlist(apply(countData[,1],1,fetch))
+taxData[,taxon_id:=countData$taxon_id]
+setcolorder(taxData,"taxon_id")
 fwrite(taxData,"taxData",sep="\t")
 
 # tbl(con,"names") # produces some weird tibble like structure which is not subsetable - tbl(con,"names")[,1] - results in an error
