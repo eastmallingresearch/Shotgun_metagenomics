@@ -420,16 +420,16 @@ lapply(seq_along(final_counts),function(i) fwrite(final_counts[[i]],paste0(file_
 
 ### Produce counts and taxonomy
 
-This needs editing, the taxonomy is not correct. It uses the output from Kaiju to assign the taxonomy - this is not complete as it excludes various taxa. Possibly only assignes to species levels, rather than higher taxonomic ranks. Will need to assign taxonomy directly from the names.dmp file.
+This needs editing, the taxonomy is not correct. It uses the output from Kaiju to assign the taxonomy - this is not complete as it excludes various taxa. Possibly only assignes to species levels, rather than higher taxonomic ranks. Will need to assign taxonomy directly from the names.dmp and nodes.dmp files.
 
 ```R
 library(data.table)
 library(tidyverse)
 
-file_suffix <- gsub("\\..*","",list.files(".",".*corrected_counts$",full.names=F,recursive=F))
+file_suffix <- gsub("\\..*","",list.files(".",".*corrected.counts$",full.names=F,recursive=F))
 
 # load count files
-qq <- lapply(file_suffix,function(i) fread(paste0(i,".corrected_counts"))) 
+qq <- lapply(file_suffix,function(i) fread(paste0(i,".corrected.counts"))) 
 
 # apply names to appropriate list columns (enables easy joining of all count tables)
 invisible(lapply(seq_along(qq),function(i) setnames(qq[[i]],"tot",file_suffix[i])))
@@ -446,7 +446,10 @@ countData <- countData[,lapply(.SD, function(x) {x[is.na(x)] <- "0" ; x})]
 # count_cols <- names(countData)[-1]
 # countData[,(count_cols):=lapply(.SD,as.numeric),.SDcols=count_cols]
 setnames(countData,"V1","taxon_id")
+```
 
+
+```r
 # load taxonomy data (and false counts)
 qq <- lapply(file_suffix,function(i) fread(paste0(i,".kaiju.counts"))) 
 invisible(lapply(qq,function(DT)DT[,c("file","percent","reads"):=NULL]))
@@ -478,9 +481,70 @@ WITH RECURSIVE
   INNER JOIN names ON 
   nodes.id = names.id
   WHERE nodes.id IN taxonomy AND names.scientific=1;
-
 ```
 
+It's a lot easier to do the querying via R than sqlite (well I think so)
+The below runs the sql query via sqldf - the whole lot could probably be replaced with aome dplyr code.
+
+```r
+library(tidyverse)
+library(data.table)
+library(sqldf)
+
+countData <- fread("countData")
+
+query <- function(i){
+  paste0("WITH RECURSIVE
+  taxonomy(i) AS (
+    VALUES(",i,")
+    UNION
+    SELECT parent FROM nodes,taxonomy
+    WHERE nodes.id = taxonomy.i
+  )
+  SELECT nodes.rank,name FROM nodes
+  INNER JOIN names ON 
+  nodes.id = names.id
+  WHERE nodes.id IN taxonomy 
+  AND names.scientific=1 AND 
+    (rank='species' OR
+     rank='genuse' OR
+     rank='family' OR
+     rank='order' OR
+     rank='class' OR
+     rank='phylum' OR
+     rank='kingdom' OR
+     rank='superkingdom')
+   ")
+}
+
+fetch <- function(i){
+  X<- sqldf(query(i),connection=con)
+  X<-setNames(data.frame(t(X[,-1])),X[,1])
+  setDT(X)
+  
+  cols <- c(superkingdom = NA_real_, 
+            kingdom = NA_real_, 
+            phylum = NA_real_,
+            class = NA_real_,
+            order = NA_real_,
+            family = NA_real_,
+            genus = NA_real_,
+            species = NA_real_)
+  
+  X<-add_column(X, !!!cols[setdiff(names(cols), names(X))])
+  setcolorder(X,c("superkingdom","kingdom","phylum","class","order","family","genus","species"))
+  X
+}
+
+con <- DBI::dbConnect(RSQLite::SQLite(),"taxonomy.db",flags=SQLITE_RO)
+
+taxData <- rbindlist(apply(countData[,1],1,fetch))
+fwrite(taxData,"taxData",sep="\t")
+
+# tbl(con,"names") # produces some weird tibble like structure which is not subsetable - tbl(con,"names")[,1] - results in an error
+# presumably there's some very verbose dplyr syntax (maybe even as verbose as sql...) to query these tbl classes
+# tbl(con,"nodes")
+```
 ## Kraken
 
 ```shell
