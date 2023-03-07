@@ -163,7 +163,7 @@ cd carnelian/util/ext
 tar -zxf gdl-1.1.tar.gz
 cd gdl-1.1
 sh autogen.sh
-./configure 
+./configure --prefix=/home/xxx/local
 make && make install
 cd ../..
 make
