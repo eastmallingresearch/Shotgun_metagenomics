@@ -154,6 +154,9 @@ Rscript subbin_parser.R reduced.txt tab_file_location $PREFIX
 Carnelian might work
 
 ### Installing Carnelian
+
+You may need to edit the Makefile before running the final make. Remove the -static flag.
+
 ```shell
 conda install -c conda-forge vowpalwabbit
 pip install -U scikit-learn
