@@ -157,6 +157,13 @@ Carnelian might work
 
 You may need to edit the Makefile before running the final make. Remove the -static flag.
 
+Requires python 2.7
+
+```shell
+conda create --name py2 python=2.7
+conda activate 2py2
+```
+
 ```shell
 conda install -c conda-forge vowpalwabbit
 pip install -U scikit-learn
