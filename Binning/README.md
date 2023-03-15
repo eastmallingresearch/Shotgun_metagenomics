@@ -161,12 +161,14 @@ Requires python 2.7
 
 ```shell
 conda create --name py2 python=2.7
-conda activate 2py2
+conda activate py2
 ```
 
 ```shell
 conda install -c conda-forge vowpalwabbit
 pip install -U scikit-learn
+pip install pandas
+pip install biopython
 
 git clone https://github.com/snz20/carnelian
 cd carnelian/util/ext
