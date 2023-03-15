@@ -168,18 +168,21 @@ conda activate py2
 conda install -c conda-forge vowpalwabbit
 pip install -U scikit-learn
 pip install pandas
-pip install biopython
+pip install biopython==1.76
 
 git clone https://github.com/snz20/carnelian
 cd carnelian/util/ext
 tar -zxf gdl-1.1.tar.gz
 cd gdl-1.1
 sh autogen.sh
-./configure --prefix=/home/xxx/local
+./configure --prefix=$PWD/GDL/ #/home/xxx/local
 make && make install
 cd ../..
 make
 ```
+You may need to modify the Makefile in util folder (remove static) and possiblt add extra libraries.
+Finally modify the library path to include the path where the new libraries have been installed.
+
 
 ### Get pre-built model (vowpalwrabit 8.11)
 ```shell
