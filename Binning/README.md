@@ -160,8 +160,8 @@ You may need to edit the Makefile before running the final make. Remove the -sta
 Requires python 2.7
 
 ```shell
-conda create --name py2 python=2.7
-conda activate py2
+conda create --name carnelian python=2.7
+conda activate carnelian
 ```
 
 ```shell
