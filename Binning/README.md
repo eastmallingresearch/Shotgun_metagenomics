@@ -183,17 +183,31 @@ make
 You may need to modify the Makefile in util folder (remove static) and possiblt add extra libraries.
 Finally modify the library path to include the path where the new libraries have been installed.
 
+### Install FragGeneScan
+```shell
+conda install -c bioconda fraggenescan
+```
 
 ### Get pre-built model (vowpalwrabit 8.11)
 ```shell
+# move to root of carnelian folder
+cd ..
+# make data directory
+mkdir data
+cd data
 # prebuilt models
 wget http://bergerlab-downloads.csail.mit.edu/carnelian/EC-2010-DB-model.tar.gz &
 wget http://bergerlab-downloads.csail.mit.edu/carnelian/cog-model.tar.gz &
+
+tar -zxf EC-2010-DB-model.tar.gz
+tar -zxf cog-model.tar.gz
+cd ..
 ```
 
 ## build model database
 ```shell
-./carnelian.py train -k 8 --num_hash 4 -l 30 -c 5 data/EC-2010-DB models
+# Only necessary for new models (requires fasta file) - the above are prebuilt 
+python2 ./carnelian.py train -k 8 --num_hash 4 -l 30 -c 5 data/EC-2010-DB models
 ```
 
 ### run annotation
@@ -222,7 +236,11 @@ done
 # set model location
 MODEL=$PROJECT_FOLDER/metagenomics_pipeline/common/functional-analysis/carnelian/models/EC-2010-DB
 
+
 # run annotation pipeline
+# syntax
+# python2 carnelian.py annotate -k 8 -n 20 <FASTA_DIRECTORY> <MODEL_DIRECTORY>
+
 for DIR in $PROJECT_FOLDER/data/fasta/*/; do
   S=$(sed 's/fasta/carnelian/' <<< $DIR)
   sbatch --mem=80000 -p long -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_carnelian_annotate.sh \
