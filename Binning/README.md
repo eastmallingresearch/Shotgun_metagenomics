@@ -239,7 +239,7 @@ MODEL=$PROJECT_FOLDER/metagenomics_pipeline/common/functional-analysis/carnelian
 
 # run annotation pipeline
 # syntax
-# python2 carnelian.py annotate -k 8 -n 20 <FASTA_DIRECTORY> <MODEL_DIRECTORY>
+# python2 carnelian.py annotate -k 8 -n 20 <FASTA_DIRECTORY> <MODEL_DIRECTORY> <DIRECTORY?> FragGeneScan 
 
 for DIR in $PROJECT_FOLDER/data/fasta/*/; do
   S=$(sed 's/fasta/carnelian/' <<< $DIR)
