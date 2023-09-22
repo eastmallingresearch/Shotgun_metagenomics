@@ -563,14 +563,14 @@ CREATE TABLE nodes (
 
 .shell echo Importing names
 .separator '|'
-.import names.dmp names
+.import names_tabless.dmp names
 .shell echo Indexing names.
 CREATE INDEX name_idx ON names(taxID);
 CREATE INDEX name_class ON names (name,name_class);
 
 .shell echo Importing nodes
 .separator '|'
-.import nodes.dmp nodes
+.import names_tabless.dmp nodes
 .shell echo Indexing nodes.
 CREATE INDEX nodes_idx ON nodes(taxID);
 
@@ -578,7 +578,17 @@ EOT
 ```
 
 The name and nodes files need to be in the same folder as the sqlite script.  
+
+The names and nodes files have an odd separator field \t|\t possibly. It's best to remove tabs from the files before making the databases
+
+```shell
+sed -i 's/\t//g' names.dmp > names_tabless.dmp
+sed -i 's/\t//g' nodes.dmp > nodes_tabless.dmp
+
+```
+
 Imports the files into two tables named as above (the script will throw up a lot of info messages as both cmp files contain a lot of irrelevent columns - there's no way to suppress these messages in sqlite [as far as I know])
+
 
 ```shell
 ./create-sqlite.sh taxonomy.db
@@ -587,18 +597,29 @@ Imports the files into two tables named as above (the script will throw up a lot
 Below is a sql script to query the taxonomy database  - but it's possibly easier to do everything in R rather than via sqlite directly
 
 ```sql
-# recursive query to get all parents of id
+-- recursive query to get all parents of id
 WITH RECURSIVE
   taxonomy(i) AS (
-    VALUES(x)
+    VALUES(2927976)
     UNION
-    SELECT parent FROM nodes,taxonomy
-    WHERE nodes.id = taxonomy.i
+    SELECT parent_taxID FROM nodes,taxonomy
+    WHERE nodes.taxID = taxonomy.i
   )
-  SELECT nodes.rank,nodes.id,name FROM nodes
+  SELECT nodes.rank,nodes.taxID,name FROM nodes
   INNER JOIN names ON 
-  nodes.id = names.id
-  WHERE nodes.id IN taxonomy AND names.scientific=1;
+  nodes.taxID = names.taxID
+  WHERE nodes.taxID IN taxonomy AND names.name_class="scientific name";
+
+-- no rank|1|root
+-- superkingdom|2|Bacteria
+-- genus|44675|Geothrix
+-- phylum|57723|Acidobacteriota
+-- no rank|131567|cellular organisms
+-- class|533205|Holophagae
+-- order|574975|Holophagales
+-- family|574976|Holophagaceae
+-- no rank|2647902|unclassified Geothrix
+-- species|2927976|Geothrix sp. Red802
 ```
 
 It's a lot easier to do the querying via R than sqlite (well I think so)
@@ -611,20 +632,19 @@ library(sqldf)
 
 countData <- fread("countData")
 
-
 query <- function(i){
   paste0("WITH RECURSIVE
   taxonomy(i) AS (
     VALUES(",i,")
     UNION
-    SELECT parent FROM nodes,taxonomy
-    WHERE nodes.id = taxonomy.i
+    SELECT parent_taxID FROM nodes,taxonomy
+    WHERE nodes.taxID = taxonomy.i
   )
   SELECT nodes.rank,name FROM nodes
   INNER JOIN names ON 
-  nodes.id = names.id
-  WHERE nodes.id IN taxonomy 
-  AND names.scientific=1 AND 
+  nodes.taxID = names.taxID
+  WHERE nodes.taxID IN taxonomy 
+  AND names.name_class='scientific name' AND 
     (rank='species' OR
      rank='genuse' OR
      rank='family' OR
