@@ -655,13 +655,13 @@ query <- function(i){
      rank='superkingdom')
    ")
 }
-
 fetch <- function(i){
   X<- sqldf(query(i),connection=con)
   X<-setNames(data.frame(t(X[,-1])),X[,1])
   setDT(X)
   
-  cols <- c(superkingdom = NA_real_, 
+  cols <- c(taxon_id=i,
+			superkingdom = NA_real_, 
             kingdom = NA_real_, 
             phylum = NA_real_,
             class = NA_real_,
@@ -671,10 +671,9 @@ fetch <- function(i){
             species = NA_real_)
   
   X<-add_column(X, !!!cols[setdiff(names(cols), names(X))])
-  setcolorder(X,c("superkingdom","kingdom","phylum","class","order","family","genus","species"))
+  setcolorder(X,c("taxon_id","superkingdom","kingdom","phylum","class","order","family","genus","species"))
   X
 }
-
 con <- DBI::dbConnect(RSQLite::SQLite(),"taxonomy.db",flags=SQLITE_RO)
 
 taxData <- rbindlist(apply(countData[,1],1,fetch))
