@@ -335,6 +335,9 @@ done
 ```
 
 ### Species counts
+
+The below works but it is better to use the script for corrected counts further down
+
 Best bet is to use kaiju tools to create a table of counts at the species rank - this can then be manipulated in R  
 The kaiju2table program is fast.
 
@@ -358,6 +361,24 @@ It does - DiTASic is not going to work with Kaiju. But I may be able to adapt th
 
 Will assign multimapping reads based on the proportion of uniqueliy mapped reads per taxon.
 
+This has all been scripted now...
+
+```shell
+# correct counts
+for K in $PROJECT_FOLDER/data/kaiju_taxonomy/${P1}*.out; do
+S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $K)
+sbatch --mem=80G -p short -c 1 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju_correct_counts.sh \
+ $K \
+ $S \
+ $PROJECT_FOLDER/data/kaiju_results \
+ $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm
+done
+```
+
+
+#### IGNORE - THIS IS SCRIPTED IN THE ABOVE
+
+Details of how the counts are corrected
 
 Will need counts for all taxon entries, and which are multi hits.
 ```shell
@@ -368,6 +389,9 @@ done
 ```
 
 A quick perl script to add all taxons to a hash
+
+This is in 
+
 ```perl
 #!/usr/bin/perl -s -w
 use List::Util 'sum';
@@ -451,9 +475,14 @@ lapply(seq_along(final_counts),function(i) fwrite(final_counts[[i]],paste0(file_
 
 ```
 
+END IGNORE
+
 ### Produce counts and taxonomy
 
 This needs editing, the taxonomy is not correct. It uses the output from Kaiju to assign the taxonomy - this is not complete as it excludes various taxa. Possibly only assignes to species levels, rather than higher taxonomic ranks. Will need to assign taxonomy directly from the names.dmp and nodes.dmp files.
+
+
+RUN THIS PART
 
 ```R
 library(data.table)
@@ -481,6 +510,7 @@ countData <- countData[,lapply(.SD, function(x) {x[is.na(x)] <- "0" ; x})]
 setnames(countData,"V1","taxon_id")
 ```
 
+THE BIT BELOW IS NOT WORKING CORRCTLY
 
 ```r
 # load taxonomy data (and false counts)
@@ -500,7 +530,61 @@ fwrite(countData,paste0("countData"),sep="\t",quote=F,row.names=F,col.names=T)
 
 ```
 
-Using sql is one way of doing this - need to download accesssionsTaxa from ncbi (or possibly just names/nodes, but these will need to be imported into sql)  
+END NOT WORKING
+
+Using sql is one way of doing this 
+Use names.dmp and nodes.dmp from kaiju download (or directly from NCBI - they're taxonomy file) to create sqlite database
+
+create-sqlite.sh can create a taxonomy database from names.dmp and nodes.dmp
+
+```shell
+#!/bin/bash
+
+# create-sqlite.sh 
+# create-sqlite.sh [NAME.db]
+
+dbfile=$1
+shift
+
+sqlite3 <<EOT
+.open $dbfile
+CREATE TABLE names (
+	taxID INT, 
+	name VARCHAR(300), 
+	unique_name VARCHAR(300), 
+	name_class VARCHAR(300)
+);
+	
+CREATE TABLE nodes (
+	taxID INT, 
+	parent_taxID INT, 
+	rank VARCHAR(300)
+);
+
+.shell echo Importing names
+.separator '|'
+.import names.dmp names
+.shell echo Indexing names.
+CREATE INDEX name_idx ON names(taxID);
+CREATE INDEX name_class ON names (name,name_class);
+
+.shell echo Importing nodes
+.separator '|'
+.import nodes.dmp nodes
+.shell echo Indexing nodes.
+CREATE INDEX nodes_idx ON nodes(taxID);
+
+EOT
+```
+
+The name and nodes files need to be in the same folder as the sqlite script.  
+Imports the files into two tables named as above (the script will throw up a lot of info messages as both cmp files contain a lot of irrelevent columns - there's no way to suppress these messages in sqlite [as far as I know])
+
+```shell
+./create-sqlite.sh taxonomy.db
+```
+
+Below is a sql script to query the taxonomy database  - but it's possibly easier to do everything in R rather than via sqlite directly
 
 ```sql
 # recursive query to get all parents of id
