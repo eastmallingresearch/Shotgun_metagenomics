@@ -646,7 +646,7 @@ query <- function(i){
   WHERE nodes.taxID IN taxonomy 
   AND names.name_class='scientific name' AND 
     (rank='species' OR
-     rank='genuse' OR
+     rank='genus' OR
      rank='family' OR
      rank='order' OR
      rank='class' OR
