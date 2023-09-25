@@ -681,9 +681,18 @@ taxData[,taxon_id:=countData$taxon_id]
 setcolorder(taxData,"taxon_id")
 fwrite(taxData,"taxData",sep="\t")
 
-# tbl(con,"names") # produces some weird tibble like structure which is not subsetable - tbl(con,"names")[,1] - results in an error
+# dplyr version
+# X <- tbl(con,"names") # produces some weird tibble like structure which is not subsetable - tbl(con,"names")[,1] - results in an error
 # presumably there's some very verbose dplyr syntax (maybe even as verbose as sql...) to query these tbl classes
-# tbl(con,"nodes")
+# o.k the tbl constructs a query, need to use collect(query) to return results as a table
+# Y <-tbl(con,"nodes")
+# Z <- inner_join(X,Y,y="taxID")
+# show_query(Z)
+# nms <- collect(X)
+# nds <- collect(Y)
+# setDT(nms)
+# setDT(nds)
+
 ```
 ## Kraken
 
