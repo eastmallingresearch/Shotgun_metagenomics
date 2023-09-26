@@ -313,6 +313,31 @@ conda install humann -c humann3
 
 ```
 
+### Test build
+
+```shell
+humann_test
+
+humann -i demo.fastq -o sample_results
+```
+
+### Update databases
+```shell
+# pangenome
+humann_databases --download chocophlan full /path/to/databases --update-config yes
+
+# proteins
+humann_databases --download uniref uniref90_diamond /path/to/databases --update-config yes
+
+# annotation
+humann_databases --download utility_mapping full /path/to/databases --update-config yes
+```
+
+### Running
+```shell
+humann -i sample_reads.fastq -o sample_results
+```
+
 
 # Taxonomy binning
 
