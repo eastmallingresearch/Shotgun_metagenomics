@@ -304,33 +304,58 @@ I'll install the default method for testing if it's any use before implementing 
 
 Using conda environment
 
+
+
 ```shell
 
-conda create --name humann3 python=3.7
+conda create --name humann3 -y python=3.7
 conda activate humann3
+```
 
-conda install humann -c humann3
+This will probably fail on the HPC due to incompatible glib versions
 
+```shell
+conda config --add channels biobakery
+conda install -y humann -c biobakery
+```
+
+Alternative is to install using pip excluding the binary enable build from source
+Will still have to install metaphlan - try conda build
+
+
+```shell
+pip install humann --no-binary :all:
+
+conda install metaphlan -c bioconda
 ```
 
 ### Test build
 
+Requires ~ 60G of memory
+
 ```shell
 humann_test
 
-humann -i demo.fastq -o sample_results
+humann_databases --download chocophlan DEMO humann_dbs
+humann_databases --download uniref DEMO_diamond humann_dbs
+
+mkdir tests
+cd tests
+wget https://github.com/biobakery/humann/raw/master/examples/demo.fastq.gz
+
+humann -i demo.fastq.qz -o sample_results
 ```
 
 ### Update databases
 ```shell
 # pangenome
-humann_databases --download chocophlan full /path/to/databases --update-config yes
+humann_databases --download chocophlan full [/PATH/TO/DATABASES] --update-config yes
 
 # proteins
-humann_databases --download uniref uniref90_diamond /path/to/databases --update-config yes
+humann_databases --download uniref uniref90_diamond [/PATH/TO/DATABASES] --update-config yes
 
 # annotation
-humann_databases --download utility_mapping full /path/to/databases --update-config yes
+humann_databases --download utility_mapping full [/PATH/TO/DATABASES] --update-config yes
 ```
 
 ### Running
