@@ -294,6 +294,25 @@ setnames(countData,"V1","EC")
 fwrite(countData,"countData",sep="\t",quote=F,col.names=T)
 ```
 
+## Humann3
+
+There's also humann3 which can do functional analysis - requires full alignment so will take a while to run.
+The default alignment method uses Bowtie2 (which is no longer recommended for alignment) to create BAM files.
+I'll install the default method for testing if it's any use before implementing a more approriate alignment method.
+
+### Installation
+
+Using conda environment
+
+```shell
+
+conda create --name humann3 python=3.7
+conda activate humann3
+
+conda install humann -c humann3
+
+```
+
 
 # Taxonomy binning
 
