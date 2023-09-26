@@ -302,9 +302,13 @@ I'll install the default method for testing if it's any use before implementing 
 
 ### Installation
 
+Couple of methods provided, I'd skip the conda version as it can result in glib issues
+
+The default installations will need patching to the latest levels of the software.
+
+
+
 Using conda environment
-
-
 
 ```shell
 
@@ -322,11 +326,15 @@ conda install -y humann -c biobakery
 Alternative is to install using pip excluding the binary enable build from source
 Will still have to install metaphlan - try conda build
 
+Beware there's a bug in MetaPhlan3 which renders it unusable (hardcoded link to a non existant dropbox location.. hum, auto download of "stuff" - good way to get users to trust you.)
+MetaPhlan 4 may or may not work, testing...
 
 ```shell
 pip install humann --no-binary :all:
+pip install humann --upgrade
 
-conda install metaphlan -c bioconda
+#conda install metaphlan -c bioconda
+conda install -c bioconda metaphlan=4.0.6
 ```
 
 ### Test build
