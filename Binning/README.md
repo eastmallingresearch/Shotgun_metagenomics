@@ -306,8 +306,6 @@ Couple of methods provided, I'd skip the conda version as it can result in glib 
 
 The default installations will need patching to the latest levels of the software.
 
-
-
 Using conda environment
 
 ```shell
@@ -327,14 +325,16 @@ Alternative is to install using pip excluding the binary enable build from sourc
 Will still have to install metaphlan - try conda build
 
 Beware there's a bug in MetaPhlan3 which renders it unusable (hardcoded link to a non existant dropbox location.. hum, auto download of "stuff" - good way to get users to trust you.)
-MetaPhlan 4 may or may not work, testing...
+
+Installing MetaPhlan 4.x should fix this issue
+
 
 ```shell
 pip install humann --no-binary :all:
 pip install humann --upgrade
 
-#conda install metaphlan -c bioconda
-conda install -c bioconda metaphlan=4.0.6
+# this will install an alternative build of metaphlan with correct glib version
+mamba install -c conda-forge -c bioconda metaphlan
 ```
 
 ### Test build
@@ -353,6 +353,8 @@ wget https://github.com/biobakery/humann/raw/master/examples/demo.fastq.gz
 
 humann -i demo.fastq.qz -o sample_results
 ```
+
+The test run takes a long time to run due to the mapping step by Bowtie - we're talking hours here for a test fastq of 21,000 reads.
 
 ### Update databases
 ```shell
