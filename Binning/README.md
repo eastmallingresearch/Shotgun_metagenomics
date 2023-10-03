@@ -373,6 +373,9 @@ humann_databases --download utility_mapping full [/PATH/TO/DATABASES] --update-c
 humann -i sample_reads.fastq -o sample_results
 ```
 
+#### Paired end reads
+According to the authors of Humann3 the best method for dealing  with paired end data is simply to concatenate reather than merge the reads.
+
 
 # Taxonomy binning
 
