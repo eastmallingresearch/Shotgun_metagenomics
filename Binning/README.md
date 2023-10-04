@@ -298,7 +298,10 @@ fwrite(countData,"countData",sep="\t",quote=F,col.names=T)
 
 There's also humann3 which can do functional analysis - requires full alignment so will take a while to run.
 The default alignment method uses Bowtie2 (which is no longer recommended for alignment) to create BAM files.
-I'll install the default method for testing if it's any use before implementing a more approriate alignment method.
+I'll install the default method for testing if it's any use before implementing a more appropriate alignment method.
+
+NOTE: I'm not convinced that Humann gives us anything extra compared to Kaiju, certainly not for the complex samples, e.g. soil, that we deal with. I have implemented steps to extract protein annotations from Kaiju which I'll add below. This will give us exactly the same data as from Humann, but I'll need to implement some of their pathway analysis stuff. 
+
 
 ### Installation
 
@@ -388,8 +391,6 @@ sbatch --mem=60000 -p long -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/s
  $@
 done
 ```
-
-NOTE: Humann is slow, really slow. This is mostly down to using an alignment step, with Bowtie2 which is now far form the best method, and then using Diamond to search for protein hits - Kaiju is at least one order of magnitude faster for exactly the same process. It should be possible to replicate the entire pipeline using better/faster methods.
 
 # Taxonomy binning
 
