@@ -376,6 +376,20 @@ humann -i sample_reads.fastq -o sample_results
 #### Paired end reads
 According to the authors of Humann3 the best method for dealing  with paired end data is simply to concatenate reather than merge the reads.
 
+```shell
+for FR in $PROJECT_FOLDER/data/$RUN/cleaned/*_1.fq.gz.filtered.fq.gz.cleaned.fq.gz; do
+ RR=$(sed 's/_1.fq.gz/_2.fq.gz/' <<< $FR)
+ S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $FR)
+sbatch --mem=60000 -p long -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_humann.sh \
+ $FR \
+ $RR \
+ ${S} \
+ $PROJECT_FOLDER/data/$RUN/humann/ \
+ $@
+done
+```
+
+NOTE: Humann is slow, really slow. This is mostly down to using an alignment step, with Bowtie2 which is now far form the best method, and then using Diamond to search for protein hits - Kaiju is at least one order of magnitude faster for exactly the same process. It should be possible to replicate the entire pipeline using better/faster methods.
 
 # Taxonomy binning
 
