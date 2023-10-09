@@ -791,6 +791,16 @@ fwrite(taxData,"taxData",sep="\t")
 # setDT(nds)
 
 ```
+
+### Extract protein accessions from Kaiju ouptut 
+```shell
+for f in *.kaiju.out; do
+  S=$(echo $f|awk -F"\/" '{print $NF}')
+  grep ^C $f|awk -F"\t" '{split($6,a,",");print a[1]}' >> $S.protein_accessions.txt
+done
+```
+
+
 ## Kraken
 
 ```shell
