@@ -727,6 +727,9 @@ sqlite3 -separator "|" nr.db ".import nr.names nr" 2>/dev/null
 ```
 
 #### Extract protein names
+
+This is a bit rubbish - better to use a temp table
+
 ```shell
 # create multiple sql scripts with a maximum of 9999 terms
 cd $PROJECT_FOLDER/data/taxonomy/$PREFIX
@@ -739,6 +742,27 @@ for f in x*; do
  sqlite3 $PROJECT_FOLDER/data/kaiju/nr_euk/nr.db <$f >> ${PREFIX}.prots.out
 done
 ```
+Temp table method
+
+Download accessions2taxid for proteins and create a sqlite table from it:
+ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid/prot.accession2taxid.gz
+
+
+```shell
+for FILE in DR_13_EKDN230032028-1A_HKM3WDSX7_L4_1.pcounts ; do 
+  echo "create temp table prots(acc text primary key,count text);" >query.sql
+  echo ".mode csv" >>query.sql
+  echo ".separator ;" >>query.sql
+  #echo ".import 'test.txt' prots" >>query.sql
+  echo ".import '$FILE' prots" >>query.sql
+  echo "SELECT prots.acc,desc,count FROM prots LEFT JOIN nr ON prots.acc = nr.acc;" >>query.sql
+  sqlite3 /data/data2/scratch2/deakig/nr_euk/nr.db <query.sql > ../$FILE.prots.named.out;
+done
+
+
+```
+
+
 
 ### Merge bin taxonomy and protein names
 
