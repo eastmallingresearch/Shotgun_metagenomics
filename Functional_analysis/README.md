@@ -1,3 +1,435 @@
+# Functional analysis
+
+This is all in need of updating.  
+I have a working pipeline using Kaiju, but there are other methods available which can be of use.  
+However most of them are, so far, not worth implementing for complex microbiomes (i.e. anything that is not model organism related).  
+This will change as more data is added to public databases.  
+
+Carnelian (no longer developed???) and Humann3 are worth exploring. Humann3 does work, but the couple of times I've used it, it didn't produce any useful results - it also relies on full alignment (alignment files can be deleted after run), and is just generally slow. Has potential to be useful.
+
+## Kaiju pipeline
+
+### Taxonomy 
+
+This needs to be done first - I'll move and link this at some stage
+
+Kaiju will need setting up first - details below
+
+First step is to set-up an nr database
+
+(The database is stored in $PROJECT_FOLDER/data/kaiju for the following scripts)
+```shell
+kaiju-makedb -s nr_euk 
+```
+
+``
+
+Run kaiju against paired end reads
+```shell
+for FR in $PROJECT_FOLDER/data/cleaned/*_1*.fq.gz; do
+ RR=$(sed 's/_1/_2/' <<< $FR)
+S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $FR)
+sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju.sh \
+ $PROJECT_FOLDER/data/kaiju/nodes.dmp \
+ $PROJECT_FOLDER/data/kaiju/names.dmp \
+ $PROJECT_FOLDER/data/kaiju/nr_euk/kaiju_db_nr_euk.fmi \
+ ${S}.kaiju.out \
+ $PROJECT_FOLDER/data/kaiju_taxonomy/ \
+ -z 20 -v \
+ -i $FR \
+ -j $RR
+done
+```
+
+#### Species counts
+
+The below works but it is better to use the script for corrected counts further down
+
+Best bet is to use kaiju tools to create a table of counts at the species rank - this can then be manipulated in R  
+The kaiju2table program is fast.
+
+```shell
+for K in $PROJECT_FOLDER/data/kaiju_taxonomy/${P1}*.out; do
+S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $K)
+sbatch --mem=12000 -p short -c 1 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju_table.sh \
+ $PROJECT_FOLDER/data/kaiju/nodes.dmp \
+ $PROJECT_FOLDER/data/kaiju/names.dmp \
+ ${S}.kaiju.counts \
+ $PROJECT_FOLDER/data/kaiju_results/ \
+ $K  
+done
+
+# kaiju2table -t $PROJECT_FOLDER/data/kaiju/nodes.dmp -n $PROJECT_FOLDER/data/kaiju/names.dmp -r species -l superkingdom,phylum,class,order,family,genus,species -o ${K}.counts $K &
+```
+
+#### Correct counts 
+
+Something goes here...
+
+Plan was to implement something like DiTASic, but DiTASic is not going to work with Kaiju. I may be able to adapt the model they use to apply to a protein database - won't be easy though. In fact it is full of problems, giving up on the idea for now
+
+Will assign multimapping reads based on the proportion of uniqueliy mapped reads per taxon.
+
+```shell
+# correct counts
+for K in $PROJECT_FOLDER/data/kaiju_taxonomy/${P1}*.out; do
+S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $K)
+sbatch --mem=80G -p short -c 1 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju_correct_counts.sh \
+ $K \
+ $S \
+ $PROJECT_FOLDER/data/kaiju_results \
+ $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm
+done
+```
+
+#### Produce counts and taxonomy
+
+```R
+library(data.table)
+library(tidyverse)
+
+file_suffix <- gsub("\\..*","",list.files(".",".*corrected.counts$",full.names=F,recursive=F))
+
+# load count files
+qq <- lapply(file_suffix,function(i) fread(paste0(i,".corrected.counts"))) 
+
+# apply names to appropriate list columns (enables easy joining of all count tables)
+invisible(lapply(seq_along(qq),function(i) setnames(qq[[i]],"tot",file_suffix[i])))
+invisible(lapply(qq,function(DT)DT[,c("prop","V2"):=NULL]))
+# merge count tables (full join)
+countData <- Reduce(function(...) {merge(..., all = TRUE)}, qq)
+
+# NA to 0
+countData <- countData[,lapply(.SD, function(x) {x[is.na(x)] <- "0" ; x})]
+# 
+# # add OTU column
+# countData[,OTU:=paste0("OTU",1:nrow(countData))]
+# 
+# count_cols <- names(countData)[-1]
+# countData[,(count_cols):=lapply(.SD,as.numeric),.SDcols=count_cols]
+setnames(countData,"V1","taxon_id")
+```
+
+
+Using sql is one way of doing this 
+Use names.dmp and nodes.dmp from kaiju download (or directly from NCBI - they're taxonomy file) to create sqlite database
+
+create-sqlite.sh can create a taxonomy database from names.dmp and nodes.dmp
+
+```shell
+#!/bin/bash
+
+# create-sqlite.sh 
+# create-sqlite.sh [NAME.db]
+
+dbfile=$1
+shift
+
+sqlite3 <<EOT
+.open $dbfile
+CREATE TABLE names (
+	taxID INT, 
+	name VARCHAR(300), 
+	unique_name VARCHAR(300), 
+	name_class VARCHAR(300)
+);
+	
+CREATE TABLE nodes (
+	taxID INT, 
+	parent_taxID INT, 
+	rank VARCHAR(300)
+);
+
+.shell echo Importing names
+.separator '|'
+.import names_tabless.dmp names
+.shell echo Indexing names.
+CREATE INDEX name_idx ON names(taxID);
+CREATE INDEX name_class ON names (name,name_class);
+
+.shell echo Importing nodes
+.separator '|'
+.import names_tabless.dmp nodes
+.shell echo Indexing nodes.
+CREATE INDEX nodes_idx ON nodes(taxID);
+
+EOT
+```
+
+The name and nodes files need to be in the same folder as the sqlite script.  
+
+The names and nodes files have an odd separator field \t|\t possibly. It's best to remove tabs from the files before making the databases
+
+```shell
+sed -i 's/\t//g' names.dmp > names_tabless.dmp
+sed -i 's/\t//g' nodes.dmp > nodes_tabless.dmp
+
+```
+
+Imports the files into two tables named as above (the script will throw up a lot of info messages as both cmp files contain a lot of irrelevent columns - there's no way to suppress these messages in sqlite [as far as I know])
+
+
+```shell
+./create-sqlite.sh taxonomy.db
+```
+
+Below is a sql script to query the taxonomy database  - but it's possibly easier to do everything in R rather than via sqlite directly
+
+```sql
+-- recursive query to get all parents of id
+WITH RECURSIVE
+  taxonomy(i) AS (
+    VALUES(2927976)
+    UNION
+    SELECT parent_taxID FROM nodes,taxonomy
+    WHERE nodes.taxID = taxonomy.i
+  )
+  SELECT nodes.rank,nodes.taxID,name FROM nodes
+  INNER JOIN names ON 
+  nodes.taxID = names.taxID
+  WHERE nodes.taxID IN taxonomy AND names.name_class="scientific name";
+
+-- no rank|1|root
+-- superkingdom|2|Bacteria
+-- genus|44675|Geothrix
+-- phylum|57723|Acidobacteriota
+-- no rank|131567|cellular organisms
+-- class|533205|Holophagae
+-- order|574975|Holophagales
+-- family|574976|Holophagaceae
+-- no rank|2647902|unclassified Geothrix
+-- species|2927976|Geothrix sp. Red802
+```
+
+It's a lot easier to do the querying via R than sqlite (well I think so)
+The below runs the sql query via sqldf - the whole lot could probably be replaced with some, megaverbose(TM) dplyr code.
+
+```r
+library(tidyverse)
+library(data.table)
+library(sqldf)
+
+countData <- fread("countData")
+
+query <- function(i){
+  paste0("WITH RECURSIVE
+  taxonomy(i) AS (
+    VALUES(",i,")
+    UNION
+    SELECT parent_taxID FROM nodes,taxonomy
+    WHERE nodes.taxID = taxonomy.i
+  )
+  SELECT nodes.rank,name FROM nodes
+  INNER JOIN names ON 
+  nodes.taxID = names.taxID
+  WHERE nodes.taxID IN taxonomy 
+  AND names.name_class='scientific name' AND 
+    (rank='species' OR
+     rank='genus' OR
+     rank='family' OR
+     rank='order' OR
+     rank='class' OR
+     rank='phylum' OR
+     rank='kingdom' OR
+     rank='superkingdom')
+   ")
+}
+fetch <- function(i){
+  X<- sqldf(query(i),connection=con)
+  X<-setNames(data.frame(t(X[,-1])),X[,1])
+  setDT(X)
+  
+  cols <- c(taxon_id=i,
+			superkingdom = NA_real_, 
+            kingdom = NA_real_, 
+            phylum = NA_real_,
+            class = NA_real_,
+            order = NA_real_,
+            family = NA_real_,
+            genus = NA_real_,
+            species = NA_real_)
+  
+  X<-add_column(X, !!!cols[setdiff(names(cols), names(X))])
+  setcolorder(X,c("taxon_id","superkingdom","kingdom","phylum","class","order","family","genus","species"))
+  X
+}
+con <- DBI::dbConnect(RSQLite::SQLite(),"taxonomy.db",flags=SQLITE_RO)
+
+taxData <- rbindlist(apply(countData[,1],1,fetch))
+taxData[,taxon_id:=countData$taxon_id]
+setcolorder(taxData,"taxon_id")
+fwrite(taxData,"taxData",sep="\t")
+
+# dplyr version
+# X <- tbl(con,"names") # produces some weird tibble like structure which is not subsetable - tbl(con,"names")[,1] - results in an error
+# presumably there's some very verbose dplyr syntax (maybe even as verbose as sql...) to query these tbl classes
+# o.k the tbl constructs a query, need to use collect(query) to return results as a table
+# Y <-tbl(con,"nodes")
+# Z <- inner_join(X,Y,y="taxID")
+# show_query(Z)
+# nms <- collect(X)
+# nds <- collect(Y)
+# setDT(nms)
+# setDT(nds)
+
+```
+
+### Extract protein accessions from Kaiju ouptut 
+```shell
+for f in *.kaiju.out; do
+  S=$(echo $f|awk -F"\/" '{print $NF}')
+  grep ^C $f|awk -F"\t" '{split($6,a,",");print a[1]}' >> $S.protein_accessions.txt
+done
+```
+
+Some code goes here to concatenate the counts and accessions
+
+### Functional analysis 
+
+The output data contains a huge number of proteins, almost all which can not be distinguished at the functional level - they may have different functions, but the details are not yet available. Due to this massive duplication, it makes sense to shrink the data down to unique protein functions.  
+
+Below is a short bit of R code to do this. Not all steps are stricktly neccessary (the DESeq stuff can all be dropped if it's not going to be used)
+
+
+```R
+## Load required libraries
+library(DESeq2)
+library(data.table)
+library(tidyverse)
+
+# uncomment below 2 lines to install metafuncs package
+# library(devtools)
+# install_github("eastmallingresearch/Metabarcoding_pipeline/scripts")
+library(metafuncs)
+
+
+# Custom functions
+dt_to_df <-
+function (DT, row_names = 1) 
+{
+  DF <- as.data.frame(DT)
+  row.names(DF) <- DF[, row_names]
+  DF <- DF[, -row_names]
+  DF
+}
+
+# host <- ifelse(Sys.info()[['sysname']]=="Windows","/","~")
+
+#=============================================================================== -->
+#       Load data
+#=============================================================================== -->
+
+# Load data
+
+countData   <- fread("prot.counts.txt")
+colData   <- fread("colData.txt") # this is just a meta data file, could just use countData row names
+accession <- fread("prot.acc.prots.named.out")
+
+#=============================================================================== -->
+#       Create DESeq object to calculate initial size factors
+#=============================================================================== -->
+
+# row_names column of countData object
+row_names <- 1 
+
+# creates a dds object and also subsets and orders colData by colnames of countData
+dds <- DESeqDataSetFromMatrix(dt_to_df(countData,row_names), dt_to_df(colData)[names(countData)[-row_names],], ~1)
+
+# get size factors
+sf <- sizeFactors(estimateSizeFactors(dds))
+
+
+#=============================================================================== -->
+##       Filter reads
+#============================================================================ -->
+
+# memory efficient row deletion
+delete <- function(DT, del.idxs) {           
+  keep.idxs <- setdiff(DT[, .I], del.idxs);  # select row indexes to delete
+  cols = names(DT);
+  DT.subset <- data.table(DT[[1]][keep.idxs]); # this is the subsetted table
+  setnames(DT.subset, cols[1]);
+  for (col in cols[2:length(cols)]) {
+    DT.subset[, (col) := DT[[col]][keep.idxs]];
+    DT[, (col) := NULL];  # delete
+  }
+  return(DT.subset);
+}
+
+
+# simple filter to remove anything with a count less than 10
+# best test this works first before mashing the full table..
+#test <- countData[1:9,]
+#rowSums(test[,-1])
+#test <- delete(test,which(rowSums(test[,-1])<10)) 
+#rowSums(test[,-1])
+
+##### why is this here before combining accessions????
+#remove <- which(rowSums(countData[,-1])<10)
+#cat("removing",length(remove),"out of",nrow(countData),"total proteins\n")
+#countData <- delete(countData,remove) # this will still take a while...
+#countData <- countData[-1,]
+
+# Combine accessions - remove blanks
+blank_accession <- accession[V2=="",]
+accession <- accession[V2!="",]
+accession[,full:=gsub(";.*","",V2)]
+
+# quick test
+CD <- head(countData,4000)
+test <- head(accession,4000)
+CD <- test[CD,on=c("V1"="ProtID")]
+cols=names(CD)[-1:-3]
+CD1 <- CD[, lapply(.SD, sum, na.rm=TRUE), by=full,.SDcols=cols ]
+# end test
+
+# remove some issues in the accessions, e.g. remove the partial names from hypothetical proteins
+# this may not be complete - update as required
+accession[,full:=gsub("\001[a-zA-Z0-9]*\\.. "," ",full)]
+accession[,full:=gsub("^(hypothetical protein) ([a-zA-Z0-9_\\.]*)$","\\1",full)]
+accession[,full:=gsub("^(hypothetical protein)( [a-zA-Z0-9_\\.\\-]*)$","\\1",full)]
+accession[,full:=gsub("^(hypothetical protein)( [a-zA-Z0-9_\\.\\-]* \\(plasmid\\)$)","\\1",full)]
+accession[,full:=gsub("^(hypothetical protein)( \\(plasmid\\)$)","\\1",full)]
+accession[,full:=gsub("^(hypothetical protein)(, partial \\(plasmid\\)$)","\\1",full)]
+accession[,full:=gsub("^(hypothetical protein)(, partial$)","\\1",full)]
+accession[,full:=gsub("^(hypothetical protein)( [a-zA-Z0-9_\\.\\-]*, partial$)","\\1",full)]
+
+# merge countData and accessions
+countData <- accession[countData,on=c("V1"="ProtID")] # this will take a bit (not so long about 3mins)
+cols=names(countData)[-1:-3]
+
+# combine counts on full name - these are proteis whoch can not be differentiated by function
+countData <- countData[, lapply(.SD, sum, na.rm=TRUE), by=full,.SDcols=cols ] # this should be reasonably fast
+
+# first row is the stuff which is unnamed, but I guess could still be kept..
+# update using ref symatics
+countData[is.na(full), full := "Unknown function"]
+
+# remove hypothetical proteins - or not (I think I'll keep them in for now)
+#idx <- which(countData$full=="hypothetical protein")
+#countData <- delete(countData,idx)
+
+# write data
+sf <- sizeFactors(dds) 
+
+# reorder columns - not necessary, but will save having to call again
+colData <- colData[names(countData)[-1],on="Sample_name"]
+
+# add size factors to metadata
+colData[,sizefactors:=sf]
+
+fwrite(countData,"countData.small.txt",sep="\t")
+fwrite(colData,"colData.sf.txt",sep="\t",row.names = T)
+fwrite(accession,"accessions.small.txt",sep="\t")
+sfD <- data.table(sf=sf)
+fwrite(sfD,"sizeFactors.txt",row.names = T)
+
+```
+
+END KAIJU
+
+## Carnelia
+
 ### Installing Carnelian
 
 You may need to edit the Makefile before running the final make. Remove the -static flag.
@@ -237,413 +669,7 @@ sbatch --mem=60000 -p long -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/s
 done
 ```
 
-# Taxonomy binning
 
-Taxonomy binning uses a mashup of various pipelines. I did try and implement Anvio, but it is vastly too slow (and memory hungry) for the size of data involved in soil metegenomics.  
-
-The binning is done by Metabat which requires sorted bam files (as produced above).   
-![#f03c15](https://placehold.it/15/f03c15/000000?text=+) Note - cluster jobs are written for slurm not grid engine
-
-Kaiju by itself maybe of use for binning raw (or filtered) reads - use as below
-
-## Kaiju binning and taxonomy
-
-Kaiju will need setting up first - details below
-
-First step is to set-up an nr database
-
-(The database is stored in $PROJECT_FOLDER/data/kaiju for the following scripts)
-```shell
-kaiju-makedb -s nr_euk 
-```
-
-``
-
-Run kaiju against paired end reads
-```shell
-for FR in $PROJECT_FOLDER/data/cleaned/*_1*.fq.gz; do
- RR=$(sed 's/_1/_2/' <<< $FR)
-S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $FR)
-sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju.sh \
- $PROJECT_FOLDER/data/kaiju/nodes.dmp \
- $PROJECT_FOLDER/data/kaiju/names.dmp \
- $PROJECT_FOLDER/data/kaiju/nr_euk/kaiju_db_nr_euk.fmi \
- ${S}.kaiju.out \
- $PROJECT_FOLDER/data/kaiju_taxonomy/ \
- -z 20 -v \
- -i $FR \
- -j $RR
-done
-```
-
-### Species counts
-
-The below works but it is better to use the script for corrected counts further down
-
-Best bet is to use kaiju tools to create a table of counts at the species rank - this can then be manipulated in R  
-The kaiju2table program is fast.
-
-```shell
-for K in $PROJECT_FOLDER/data/kaiju_taxonomy/${P1}*.out; do
-S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $K)
-sbatch --mem=12000 -p short -c 1 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju_table.sh \
- $PROJECT_FOLDER/data/kaiju/nodes.dmp \
- $PROJECT_FOLDER/data/kaiju/names.dmp \
- ${S}.kaiju.counts \
- $PROJECT_FOLDER/data/kaiju_results/ \
- $K  
-done
-
-# kaiju2table -t $PROJECT_FOLDER/data/kaiju/nodes.dmp -n $PROJECT_FOLDER/data/kaiju/names.dmp -r species -l superkingdom,phylum,class,order,family,genus,species -o ${K}.counts $K &
-```
-
-### Correct counts with DiTASiC
-Something goes here...
-It does - DiTASic is not going to work with Kaiju. But I may be able to adapt the model they use to apply to a protein database - won't be easy though. In fact it is full of problems, giving up on the idea for now
-
-Will assign multimapping reads based on the proportion of uniqueliy mapped reads per taxon.
-
-This has all been scripted now...
-
-```shell
-# correct counts
-for K in $PROJECT_FOLDER/data/kaiju_taxonomy/${P1}*.out; do
-S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $K)
-sbatch --mem=80G -p short -c 1 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju_correct_counts.sh \
- $K \
- $S \
- $PROJECT_FOLDER/data/kaiju_results \
- $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm
-done
-```
-
-
-#### IGNORE - THIS IS SCRIPTED IN THE ABOVE
-
-Details of how the counts are corrected
-
-Will need counts for all taxon entries, and which are multi hits.
-```shell
-for K in $PROJECT_FOLDER/data/kaiju_taxonomy/${P1}*.out; do
-  S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $K)
-  awk -F"\t" '{print gsub(/,/,",",$5) "\t" $5}' < $K > ${S}.new_counts  
-done
-```
-
-A quick perl script to add all taxons to a hash
-
-This is in 
-
-```perl
-#!/usr/bin/perl -s -w
-use List::Util 'sum';
-my %taxon_hash; 
-while(<STDIN>) {
-  chomp;
-  my @array=split /,/,$_;
-  foreach(@array) {
-    $taxon_hash{$_}++;
-  }
-}
-
-my $taxon_sum = sum values %taxon_hash;
-
-foreach (keys %taxon_hash) {
-  print "$_\t$taxon_hash{$_}\n";
-}
-```
-add them together
-```shell
-for f in *.new_counts; do
-  S=$(sed 's/\..*//' <<< $f)
-  awk -F"\t" '{if($1>0){print $2}}' $f|./test.pl > ${S}.pcounts & 
-done
-```
-get the totals without multi-hits as well
-```shell
-for f in *.new_counts; do
-  S=$(sed 's/\..*//' <<< $f)
-  awk -F"\t" '{if($1==1){print $2}}' $f|./test.pl > ${S}.ncounts & 
-done
-```
-Then add proportional values for each multi-hit to the totals (in R for easy multiprocessing - eats memory though)
-```R
-library(data.table)
-#   library(parallel)
-library(tidyverse)
-
-del.rows <- function(DT, del.idxs) {           # pls note 'del.idxs' vs. 'keep.idxs'
-  keep.idxs <- setdiff(DT[, .I], del.idxs);  # select row indexes to keep
-  cols = names(DT);
-  DT.subset <- data.table(DT[[1]][keep.idxs]); # this is the subsetted table
-  setnames(DT.subset, cols[1]);
-  for (col in cols[2:length(cols)]) {
-    DT.subset[, (col) := DT[[col]][keep.idxs]];
-    DT[, (col) := NULL];  # delete
-  }
-  return(DT.subset);
-}
-
-file_suffix <- gsub("\\..*","",list.files(".",".*pcounts$",full.names=F,recursive=F))
-
-freadFun <- function(i) fread(cmd=paste0("cat header.txt ",i,".new_counts"),fill=T,header=T)
-
-pcounts    <- lapply(file_suffix,function(i) fread(paste0(i,".pcounts"))) 
-ncounts    <- lapply(file_suffix,function(i) fread(paste0(i,".ncounts"))) 
-# new_counts <- mclapply(file_suffix,freadFun,mc.cores=10)
-fwrite(as.data.table(t(as.data.table(paste0("V",1:23)))),"header.txt",sep=",")
-new_counts <- lapply(file_suffix,freadFun)
-
-new_counts <- lapply(new_counts,function(DT) del.rows(DT,c(1,which(DT[,1]<2))))
-del_cols <- lapply(new_counts,function(DT)names(DT)[c(1,length(names(DT)))])
-invisible(lapply(seq_along(new_counts),function(i){new_counts[[i]][,(del_cols[[i]]):=NULL];new_counts[[i]][,seq:=(1:nrow(new_counts[[i]]))]}))
-lapply(pcounts,function(DT) DT[,V1:=as.character(V1)])
-lapply(ncounts,function(DT) DT[,V1:=as.character(V1)])
-
-multi_hits <- lapply(new_counts,melt,id.vars="seq")
-invisible(lapply(multi_hits,function(DT){DT[,variable:=NULL];DT[,value:=as.factor(value)];setnames(DT,"value","V1")}))
-multi_hits <- lapply(multi_hits,function(DT) del.rows(DT,which(DT[,2]=="")))
-
-final_counts <- lapply(seq_along(multi_hits),function(i) {
-  X <- pcounts[[i]][multi_hits[[i]],on="V1"]
-  X[,prop:=V2/sum(V2),by=seq]
-  X<- X[,lapply(.SD,sum),by=V1,.SDcols="prop"]
-  X <- merge(X, ncounts[[i]], all=TRUE)
-  X[,tot:=rowSums(.SD, na.rm = TRUE), .SDcols =c("V2","prop")]
-  #ncounts[[i]][X,tot:=V2+prop,on="V1"]
-})
-
-lapply(seq_along(final_counts),function(i) fwrite(final_counts[[i]],paste0(file_suffix[[i]],".corrected_counts"),sep="\t"))
-
-```
-
-END IGNORE
-
-### Produce counts and taxonomy
-
-This needs editing, the taxonomy is not correct. It uses the output from Kaiju to assign the taxonomy - this is not complete as it excludes various taxa. Possibly only assignes to species levels, rather than higher taxonomic ranks. Will need to assign taxonomy directly from the names.dmp and nodes.dmp files.
-
-
-RUN THIS PART
-
-```R
-library(data.table)
-library(tidyverse)
-
-file_suffix <- gsub("\\..*","",list.files(".",".*corrected.counts$",full.names=F,recursive=F))
-
-# load count files
-qq <- lapply(file_suffix,function(i) fread(paste0(i,".corrected.counts"))) 
-
-# apply names to appropriate list columns (enables easy joining of all count tables)
-invisible(lapply(seq_along(qq),function(i) setnames(qq[[i]],"tot",file_suffix[i])))
-invisible(lapply(qq,function(DT)DT[,c("prop","V2"):=NULL]))
-# merge count tables (full join)
-countData <- Reduce(function(...) {merge(..., all = TRUE)}, qq)
-
-# NA to 0
-countData <- countData[,lapply(.SD, function(x) {x[is.na(x)] <- "0" ; x})]
-# 
-# # add OTU column
-# countData[,OTU:=paste0("OTU",1:nrow(countData))]
-# 
-# count_cols <- names(countData)[-1]
-# countData[,(count_cols):=lapply(.SD,as.numeric),.SDcols=count_cols]
-setnames(countData,"V1","taxon_id")
-```
-
-THE BIT BELOW IS NOT WORKING CORRCTLY
-
-```r
-# load taxonomy data (and false counts)
-qq <- lapply(file_suffix,function(i) fread(paste0(i,".kaiju.counts"))) 
-invisible(lapply(qq,function(DT)DT[,c("file","percent","reads"):=NULL]))
-
-# the below does not find all the taxonomy included in the output.
-taxData <- Reduce(function(...) {merge(..., all = TRUE)}, qq)
-taxData[,taxon_id:=as.character(taxon_id)]
-fwrite(taxData,"taxData.txt",sep=";",quote=F,row.names=F,col.names=F)
-fread("taxData.txt",fill=T)
-taxData[,V9:=NULL]
-setnames(taxData,c("taxon_id","kingdom","phylum","class","order","family","genus","species"))
-fwrite(taxData,"taxData.txt",sep=";",quote=F)
-
-fwrite(countData,paste0("countData"),sep="\t",quote=F,row.names=F,col.names=T)
-
-```
-
-END NOT WORKING
-
-Using sql is one way of doing this 
-Use names.dmp and nodes.dmp from kaiju download (or directly from NCBI - they're taxonomy file) to create sqlite database
-
-create-sqlite.sh can create a taxonomy database from names.dmp and nodes.dmp
-
-```shell
-#!/bin/bash
-
-# create-sqlite.sh 
-# create-sqlite.sh [NAME.db]
-
-dbfile=$1
-shift
-
-sqlite3 <<EOT
-.open $dbfile
-CREATE TABLE names (
-	taxID INT, 
-	name VARCHAR(300), 
-	unique_name VARCHAR(300), 
-	name_class VARCHAR(300)
-);
-	
-CREATE TABLE nodes (
-	taxID INT, 
-	parent_taxID INT, 
-	rank VARCHAR(300)
-);
-
-.shell echo Importing names
-.separator '|'
-.import names_tabless.dmp names
-.shell echo Indexing names.
-CREATE INDEX name_idx ON names(taxID);
-CREATE INDEX name_class ON names (name,name_class);
-
-.shell echo Importing nodes
-.separator '|'
-.import names_tabless.dmp nodes
-.shell echo Indexing nodes.
-CREATE INDEX nodes_idx ON nodes(taxID);
-
-EOT
-```
-
-The name and nodes files need to be in the same folder as the sqlite script.  
-
-The names and nodes files have an odd separator field \t|\t possibly. It's best to remove tabs from the files before making the databases
-
-```shell
-sed -i 's/\t//g' names.dmp > names_tabless.dmp
-sed -i 's/\t//g' nodes.dmp > nodes_tabless.dmp
-
-```
-
-Imports the files into two tables named as above (the script will throw up a lot of info messages as both cmp files contain a lot of irrelevent columns - there's no way to suppress these messages in sqlite [as far as I know])
-
-
-```shell
-./create-sqlite.sh taxonomy.db
-```
-
-Below is a sql script to query the taxonomy database  - but it's possibly easier to do everything in R rather than via sqlite directly
-
-```sql
--- recursive query to get all parents of id
-WITH RECURSIVE
-  taxonomy(i) AS (
-    VALUES(2927976)
-    UNION
-    SELECT parent_taxID FROM nodes,taxonomy
-    WHERE nodes.taxID = taxonomy.i
-  )
-  SELECT nodes.rank,nodes.taxID,name FROM nodes
-  INNER JOIN names ON 
-  nodes.taxID = names.taxID
-  WHERE nodes.taxID IN taxonomy AND names.name_class="scientific name";
-
--- no rank|1|root
--- superkingdom|2|Bacteria
--- genus|44675|Geothrix
--- phylum|57723|Acidobacteriota
--- no rank|131567|cellular organisms
--- class|533205|Holophagae
--- order|574975|Holophagales
--- family|574976|Holophagaceae
--- no rank|2647902|unclassified Geothrix
--- species|2927976|Geothrix sp. Red802
-```
-
-It's a lot easier to do the querying via R than sqlite (well I think so)
-The below runs the sql query via sqldf - the whole lot could probably be replaced with aome dplyr code.
-
-```r
-library(tidyverse)
-library(data.table)
-library(sqldf)
-
-countData <- fread("countData")
-
-query <- function(i){
-  paste0("WITH RECURSIVE
-  taxonomy(i) AS (
-    VALUES(",i,")
-    UNION
-    SELECT parent_taxID FROM nodes,taxonomy
-    WHERE nodes.taxID = taxonomy.i
-  )
-  SELECT nodes.rank,name FROM nodes
-  INNER JOIN names ON 
-  nodes.taxID = names.taxID
-  WHERE nodes.taxID IN taxonomy 
-  AND names.name_class='scientific name' AND 
-    (rank='species' OR
-     rank='genus' OR
-     rank='family' OR
-     rank='order' OR
-     rank='class' OR
-     rank='phylum' OR
-     rank='kingdom' OR
-     rank='superkingdom')
-   ")
-}
-fetch <- function(i){
-  X<- sqldf(query(i),connection=con)
-  X<-setNames(data.frame(t(X[,-1])),X[,1])
-  setDT(X)
-  
-  cols <- c(taxon_id=i,
-			superkingdom = NA_real_, 
-            kingdom = NA_real_, 
-            phylum = NA_real_,
-            class = NA_real_,
-            order = NA_real_,
-            family = NA_real_,
-            genus = NA_real_,
-            species = NA_real_)
-  
-  X<-add_column(X, !!!cols[setdiff(names(cols), names(X))])
-  setcolorder(X,c("taxon_id","superkingdom","kingdom","phylum","class","order","family","genus","species"))
-  X
-}
-con <- DBI::dbConnect(RSQLite::SQLite(),"taxonomy.db",flags=SQLITE_RO)
-
-taxData <- rbindlist(apply(countData[,1],1,fetch))
-taxData[,taxon_id:=countData$taxon_id]
-setcolorder(taxData,"taxon_id")
-fwrite(taxData,"taxData",sep="\t")
-
-# dplyr version
-# X <- tbl(con,"names") # produces some weird tibble like structure which is not subsetable - tbl(con,"names")[,1] - results in an error
-# presumably there's some very verbose dplyr syntax (maybe even as verbose as sql...) to query these tbl classes
-# o.k the tbl constructs a query, need to use collect(query) to return results as a table
-# Y <-tbl(con,"nodes")
-# Z <- inner_join(X,Y,y="taxID")
-# show_query(Z)
-# nms <- collect(X)
-# nds <- collect(Y)
-# setDT(nms)
-# setDT(nds)
-
-```
-
-### Extract protein accessions from Kaiju ouptut 
-```shell
-for f in *.kaiju.out; do
-  S=$(echo $f|awk -F"\/" '{print $NF}')
-  grep ^C $f|awk -F"\t" '{split($6,a,",");print a[1]}' >> $S.protein_accessions.txt
-done
-```
 
 
 ## Kraken
