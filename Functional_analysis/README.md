@@ -423,6 +423,37 @@ fwrite(colData,"colData.sf.txt",sep="\t",row.names = T)
 fwrite(accession,"accessions.small.txt",sep="\t")
 sfD <- data.table(sf=sf)
 fwrite(sfD,"sizeFactors.txt",row.names = T)
+```
+
+There are a lot of resources available which ara related to UniProtID and IPR ID.   
+The pipeline produces a UniProtID for each hit in the metagenome. Below are some scripts for working with UniProtIDs
+
+#### Extract Uniprot ID from countData
+```R
+library(data.table)
+counts <- fread("countData.txt") # from above - the full count table
+ID <- counts[,1,drop=F] # gets the UniProtID
+ID[,ProtID:=gsub("\\..*","",ProtID)] # removes the protein version (this is not necessary)
+fwrite(ID,"UniProtIDs.txt") # write to file
+```
+
+#### Uniprot databases
+
+There are several useful databases curretly stored at:
+[ebi link](https://www.ebi.ac.uk/interpro/download/)
+  
+The protein to ipr database will be used here  
+```shell
+wget https://ftp.ebi.ac.uk/pub/databases/interpro/current_release/protein2ipr.dat.gz
+```
+
+#### Merge Uniprot database with IDs
+```R
+library(data.table)
+ID <- fread("UniProtIDs.txt") # load IDS
+uniprot <- fread("protein2ipr.dat") # load uniprot database
+
+DT <- uniprot[ID,on=c("ID","ProtID")] # left join ID on uniprot
 
 ```
 
