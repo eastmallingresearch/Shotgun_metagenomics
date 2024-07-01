@@ -290,7 +290,6 @@ The output data contains a huge number of proteins, almost all which can not be 
 
 Below is a short bit of R code to do this. Not all steps are stricktly neccessary (the DESeq stuff can all be dropped if it's not going to be used)
 
-
 ```R
 ## Load required libraries
 library(DESeq2)
@@ -452,12 +451,129 @@ wget https://ftp.ebi.ac.uk/pub/databases/interpro/current_release/protein2ipr.da
 library(data.table)
 ID <- fread("UniProtIDs.txt") # load IDS
 uniprot <- fread("protein2ipr.dat") # load uniprot database
+setnames(uniprot,c("ProtID","IPRID","Description","FAMID","start","end")) # add col names to uniprot data
 
-DT <- uniprot[ID,on=c("ID","ProtID")] # left join ID on uniprot
+# Best to add keys to these databases as they're big
+setkey(ID,"ProtID)
+setkey(uniprot,"ProtID") # this will take a bit to load into memory
 
+# merge 
+DT <- uniprot[ID,on=c("ProtID")] # left join ID on uniprot - this is fast with keying
+
+# lots of IPR IDs pointing at the same accession (different start and end points) - dups can be removes
+
+DT[,c("start","end"):=NULL] # remove start and end columns
+setkey(DT, ProtID, IPRID) # set a key
+DT <- unique(DT,by = key(DT)) # retain unique 
+
+# write file
+fwrite(DT,"count_ipr.txt",sep="\t")
 ```
 
-END KAIJU
+## END KAIJU
+
+
+## Humann3
+
+There's also humann3 which can do functional analysis - requires full alignment so will take a while to run.
+The default alignment method uses Bowtie2 (which is no longer recommended for alignment) to create BAM files.
+I'll install the default method for testing if it's any use before implementing a more appropriate alignment method.
+
+NOTE: I'm not convinced that Humann gives us anything extra compared to Kaiju, certainly not for the complex samples, e.g. soil, that we deal with. I have implemented steps to extract protein annotations from Kaiju which is now in the above. This will give us exactly the same data as from Humann, but I'll need to implement some of their pathway analysis stuff.  
+
+The pathway analysis is the most useful part of Humann3, it's just a shame it produces so few useful results in it's current implementation.  
+I've yet to fully integrate it into the Kaiju pathway, but have made some progress.
+
+
+### Installation
+
+Couple of methods provided, I'd skip the conda version as it can result in glib issues
+
+The default installations will need patching to the latest levels of the software.
+
+Using conda environment
+
+```shell
+
+conda create --name humann3 -y python=3.7
+conda activate humann3
+```
+
+This will probably fail on the HPC due to incompatible glib versions
+
+```shell
+conda config --add channels biobakery
+conda install -y humann -c biobakery
+```
+
+Alternative is to install using pip excluding the binary enable build from source
+Will still have to install metaphlan - try conda build
+
+Beware there's a bug in MetaPhlan3 which renders it unusable (hardcoded link to a non existant dropbox location.. hum, auto download of "stuff" - good way to get users to trust you.)
+
+Installing MetaPhlan 4.x should fix this issue
+
+
+```shell
+pip install humann --no-binary :all:
+pip install humann --upgrade
+
+# this will install an alternative build of metaphlan with correct glib version
+mamba install -c conda-forge -c bioconda metaphlan
+```
+
+### Test build
+
+Requires ~ 60G of memory
+
+```shell
+humann_test
+
+humann_databases --download chocophlan DEMO humann_dbs
+humann_databases --download uniref DEMO_diamond humann_dbs
+
+mkdir tests
+cd tests
+wget https://github.com/biobakery/humann/raw/master/examples/demo.fastq.gz
+
+humann -i demo.fastq.qz -o sample_results
+```
+
+The test run takes a long time to run due to the mapping step by Bowtie - we're talking hours here for a test fastq of 21,000 reads.
+
+### Update databases
+```shell
+# pangenome
+humann_databases --download chocophlan full [/PATH/TO/DATABASES] --update-config yes
+
+# proteins
+humann_databases --download uniref uniref90_diamond [/PATH/TO/DATABASES] --update-config yes
+
+# annotation
+humann_databases --download utility_mapping full [/PATH/TO/DATABASES] --update-config yes
+```
+
+### Running
+```shell
+humann -i sample_reads.fastq -o sample_results
+```
+
+#### Paired end reads
+According to the authors of Humann3 the best method for dealing  with paired end data is simply to concatenate reather than merge the reads.
+
+```shell
+for FR in $PROJECT_FOLDER/data/$RUN/cleaned/*_1.fq.gz.filtered.fq.gz.cleaned.fq.gz; do
+ RR=$(sed 's/_1.fq.gz/_2.fq.gz/' <<< $FR)
+ S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $FR)
+sbatch --mem=60000 -p long -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_humann.sh \
+ $FR \
+ $RR \
+ ${S} \
+ $PROJECT_FOLDER/data/$RUN/humann/ \
+ $@
+done
+```
+
 
 ## Carnelia
 
@@ -601,106 +717,6 @@ setnames(countData,"V1","EC")
 # write the final table
 fwrite(countData,"countData",sep="\t",quote=F,col.names=T)
 ```
-
-## Humann3
-
-There's also humann3 which can do functional analysis - requires full alignment so will take a while to run.
-The default alignment method uses Bowtie2 (which is no longer recommended for alignment) to create BAM files.
-I'll install the default method for testing if it's any use before implementing a more appropriate alignment method.
-
-NOTE: I'm not convinced that Humann gives us anything extra compared to Kaiju, certainly not for the complex samples, e.g. soil, that we deal with. I have implemented steps to extract protein annotations from Kaiju which I'll add below. This will give us exactly the same data as from Humann, but I'll need to implement some of their pathway analysis stuff. 
-
-
-### Installation
-
-Couple of methods provided, I'd skip the conda version as it can result in glib issues
-
-The default installations will need patching to the latest levels of the software.
-
-Using conda environment
-
-```shell
-
-conda create --name humann3 -y python=3.7
-conda activate humann3
-```
-
-This will probably fail on the HPC due to incompatible glib versions
-
-```shell
-conda config --add channels biobakery
-conda install -y humann -c biobakery
-```
-
-Alternative is to install using pip excluding the binary enable build from source
-Will still have to install metaphlan - try conda build
-
-Beware there's a bug in MetaPhlan3 which renders it unusable (hardcoded link to a non existant dropbox location.. hum, auto download of "stuff" - good way to get users to trust you.)
-
-Installing MetaPhlan 4.x should fix this issue
-
-
-```shell
-pip install humann --no-binary :all:
-pip install humann --upgrade
-
-# this will install an alternative build of metaphlan with correct glib version
-mamba install -c conda-forge -c bioconda metaphlan
-```
-
-### Test build
-
-Requires ~ 60G of memory
-
-```shell
-humann_test
-
-humann_databases --download chocophlan DEMO humann_dbs
-humann_databases --download uniref DEMO_diamond humann_dbs
-
-mkdir tests
-cd tests
-wget https://github.com/biobakery/humann/raw/master/examples/demo.fastq.gz
-
-humann -i demo.fastq.qz -o sample_results
-```
-
-The test run takes a long time to run due to the mapping step by Bowtie - we're talking hours here for a test fastq of 21,000 reads.
-
-### Update databases
-```shell
-# pangenome
-humann_databases --download chocophlan full [/PATH/TO/DATABASES] --update-config yes
-
-# proteins
-humann_databases --download uniref uniref90_diamond [/PATH/TO/DATABASES] --update-config yes
-
-# annotation
-humann_databases --download utility_mapping full [/PATH/TO/DATABASES] --update-config yes
-```
-
-### Running
-```shell
-humann -i sample_reads.fastq -o sample_results
-```
-
-#### Paired end reads
-According to the authors of Humann3 the best method for dealing  with paired end data is simply to concatenate reather than merge the reads.
-
-```shell
-for FR in $PROJECT_FOLDER/data/$RUN/cleaned/*_1.fq.gz.filtered.fq.gz.cleaned.fq.gz; do
- RR=$(sed 's/_1.fq.gz/_2.fq.gz/' <<< $FR)
- S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $FR)
-sbatch --mem=60000 -p long -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_humann.sh \
- $FR \
- $RR \
- ${S} \
- $PROJECT_FOLDER/data/$RUN/humann/ \
- $@
-done
-```
-
-
 
 
 ## Kraken
