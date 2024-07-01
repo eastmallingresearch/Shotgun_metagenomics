@@ -440,25 +440,47 @@ fwrite(ID,"UniProtIDs.txt") # write to file
 
 There are several useful databases curretly stored at:
 [ebi link](https://www.ebi.ac.uk/interpro/download/)
-  
 The protein to ipr database will be used here  
+
+
+There's also the UniProt mapping file
+[UniMap](ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping.dat.gz)
+  
 ```shell
 wget https://ftp.ebi.ac.uk/pub/databases/interpro/current_release/protein2ipr.dat.gz
+
+wget ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping.dat.gz
+zcat idmapping.dat.gz |grep "RefSeq" >ncbi_uniprot.txt # extract ncbi IDs
+
 ```
 
 #### Merge Uniprot database with IDs
 ```R
 library(data.table)
 ID <- fread("UniProtIDs.txt") # load IDS
+
+map <- fread("ncbi_uniprot.txt",header=F) # load mappings
+setnames(map,c("ProtID","ref","RefSeqID"))
+map[,RefSeqID:=gsub("\\..*","",RefSeqID)] # remove .[0-9] freom refseqIDs
+setkey(map,ProtID,REfSeqID) # add keys to map
+
 uniprot <- fread("protein2ipr.dat") # load uniprot database
 setnames(uniprot,c("ProtID","IPRID","Description","FAMID","start","end")) # add col names to uniprot data
 
 # Best to add keys to these databases as they're big
 setkey(ID,"ProtID)
 setkey(uniprot,"ProtID") # this will take a bit to load into memory
-
 # merge 
 DT <- uniprot[ID,on=c("ProtID")] # left join ID on uniprot - this is fast with keying
+
+# Extrac unampped IDs (some of these will be ncbi IDs)
+unmapped <- DT[is.na(IPRID),1,drop=F]
+setkey(unmapped,"ProtID") # add a key
+mapped <- map[unmapped] # left join unmapped on map (should match RefSeqIDs in the ID file [and link them to Uniprot ID])
+uni_mapped <- mapped[complete.cases(mapped),]
+setkey(uni_mapped,"ProtID","RefSeqID")
+
+
 
 # lots of IPR IDs pointing at the same accession (different start and end points) - dups can be removes
 
@@ -466,8 +488,23 @@ DT[,c("start","end"):=NULL] # remove start and end columns
 setkey(DT, ProtID, IPRID) # set a key
 DT <- unique(DT,by = key(DT)) # retain unique 
 
+# map extracts onto uniprot
+DT2 <- uniprot[uni_mapped,on=c("ProtID")] # left join
+DT2[,c("start","end","ref"):=NULL] # remove start and end columns
+setkey(DT2, ProtID, IPRID) 
+DT2 <- unique(DT2,by = key(DT2)) # retain unique 
+
+DT <- DT[complete.cases(DT),] # remove missing values from DT
+DT[,RefSeqID:=NA]
+
+DT <- rbindlist(DT,DT2)
+
+
 # write file
 fwrite(DT,"count_ipr.txt",sep="\t")
+
+#
+
 ```
 
 ## END KAIJU
