@@ -460,9 +460,10 @@ library(data.table)
 ID <- fread("UniProtIDs.txt") # load IDS
 
 map <- fread("ncbi_uniprot.txt",header=F) # load mappings
+
 setnames(map,c("ProtID","ref","RefSeqID"))
 map[,RefSeqID:=gsub("\\..*","",RefSeqID)] # remove .[0-9] freom refseqIDs
-setkey(map,ProtID,REfSeqID) # add keys to map
+setkey(map,ProtID,RefSeqID) # add keys to map
 
 uniprot <- fread("protein2ipr.dat") # load uniprot database
 setnames(uniprot,c("ProtID","IPRID","Description","FAMID","start","end")) # add col names to uniprot data
@@ -473,14 +474,12 @@ setkey(uniprot,"ProtID") # this will take a bit to load into memory
 # merge 
 DT <- uniprot[ID,on=c("ProtID")] # left join ID on uniprot - this is fast with keying
 
-# Extrac unampped IDs (some of these will be ncbi IDs)
+# Extract unampped IDs (some of these will be ncbi IDs)
 unmapped <- DT[is.na(IPRID),1,drop=F]
 setkey(unmapped,"ProtID") # add a key
 mapped <- map[unmapped] # left join unmapped on map (should match RefSeqIDs in the ID file [and link them to Uniprot ID])
 uni_mapped <- mapped[complete.cases(mapped),]
 setkey(uni_mapped,"ProtID","RefSeqID")
-
-
 
 # lots of IPR IDs pointing at the same accession (different start and end points) - dups can be removes
 
@@ -499,11 +498,53 @@ DT[,RefSeqID:=NA]
 
 DT <- rbindlist(DT,DT2)
 
-
 # write file
 fwrite(DT,"count_ipr.txt",sep="\t")
 
-#
+```
+
+#### Modify accessions file
+
+```r
+# add maps in accessions
+accessions <- fread("accessions.txt")
+
+accession[,full:=gsub(";.*","",V2)] # add full and remove altnames
+
+accession[,full:=gsub("\001[a-zA-Z0-9]*\\.. "," ",full)]
+accession[,full:=gsub("^(hypothetical protein) ([a-zA-Z0-9_\\.]*)$","\\1",full)]
+accession[,full:=gsub("^(hypothetical protein)( [a-zA-Z0-9_\\.\\-]*)$","\\1",full)]
+accession[,full:=gsub("^(hypothetical protein)( [a-zA-Z0-9_\\.\\-]* \\(plasmid\\)$)","\\1",full)]
+accession[,full:=gsub("^(hypothetical protein)( \\(plasmid\\)$)","\\1",full)]
+accession[,full:=gsub("^(hypothetical protein)(, partial \\(plasmid\\)$)","\\1",full)]
+accession[,full:=gsub("^(hypothetical protein)(, partial$)","\\1",full)]
+accession[,full:=gsub("^(hypothetical protein)( [a-zA-Z0-9_\\.\\-]*, partial$)","\\1",full)]
+
+accession[,full:=gsub("RecName: Full=","",full)]
+# set full to all lower case
+accession[,full:=tolower(full)]
+
+accession[,V1:=gsub("\\..*","",V1)]
+
+# now add in the UniProt and NCBI IDs from above
+setkey(accession,V1)
+
+map <- fread("ncbi_uniprot.txt",header=F) # load mappings
+setnames(map,c("ProtID","ref","RefSeqID")) # set the names
+map[,RefSeqID:=gsub("\\..*","",RefSeqID)] # remove .[0-9] freom refseqIDs
+setkey(map,ProtID,REfSeqID) # add keys to map
+
+NCBIs <- map[accession,on=c("RefSeqID"="V1")] # left join map on the accessions
+#UNIs  <- map[accession,on=c("ProtID"="V1")]
+NCBIs <- unique(NCBIs,by="RefSeqID") # there are a few duplicate UniProt names matching to NCBI IDs
+#UNIs<-unique(UNIs, by="ProtID")
+
+NCBIs[is.na(ProtID), ProtID := RefSeqID] # update NCBIs column, substitute NA Uniprot values with RefSeqID, this is correct it just seems to be the wrong way round
+sum(accession$V1!=NCBIs$RefSeqID) # should = 0, if it the two tables are in the same order and we can copy the ProtIds over
+
+accession[,ProtID:=NCBIs$ProtID] # add new ProtID column
+setcolorder(accession,c("ProtID","full"))
+fwrite(accession[,1:2],"uniprot_accessions.txt",sep="\t") # this file should be able to map back any descriptions from countData.small to an accession number
 
 ```
 
