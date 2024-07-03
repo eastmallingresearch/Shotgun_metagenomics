@@ -5,7 +5,7 @@ I have a working pipeline using Kaiju, but there are other methods available whi
 However most of them are, so far, not worth implementing for complex microbiomes (i.e. anything that is not model organism related).  
 This will change as more data is added to public databases.  
 
-Carnelian (no longer developed???) and Humann3 are worth exploring. Humann3 does work, but the couple of times I've used it, it didn't produce any useful results - it also relies on full alignment (alignment files can be deleted after run), and is just generally slow. Has potential to be useful.
+Carnelian (no longer developed???) and Humann3 are worth exploring. Humann3 does work, but the couple of times I've used it, it didn't produce any useful results - it also relies on full alignment (alignment files can be deleted after run), and is just generally slow. Has potential to be useful, and I'm going to take another look to ensure I implementes correctly.
 
 ## Kaiju pipeline
 
@@ -562,7 +562,6 @@ NOTE: I'm not convinced that Humann gives us anything extra compared to Kaiju, c
 The pathway analysis is the most useful part of Humann3, it's just a shame it produces so few useful results in it's current implementation.  
 I've yet to fully integrate it into the Kaiju pathway, but have made some progress.
 
-
 ### Installation
 
 Couple of methods provided, I'd skip the conda version as it can result in glib issues
@@ -651,6 +650,8 @@ sbatch --mem=60000 -p long -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/s
  $@
 done
 ```
+
+There are several output files from Humann, the most 
 
 
 ## Carnelia
