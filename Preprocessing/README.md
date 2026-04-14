@@ -15,7 +15,7 @@ mkdir $PROJECT_FOLDER/data/filtered
 mkdir $PROJECT_FOLDER/data/normalised
 mkdir $PROJECT_FOLDER/data/merged
 ```
-### Adapter removal/quality filtering and contaminant filtering
+### Adapter removal and contaminant filtering (optional quality filtering)
 BBTools has good options for doing all of this. 
 
 I've merged adapter removal, phix filtering and rRNA removal into a single operation using BBDuk (though it has to run multiple times, rather than a single passthrough). To modify any settings will require editing the mega_duk.sh script. Alternatively the three operations can be run seperately using bbduk (PIPELINE.sc -c bbduk). 
@@ -45,7 +45,14 @@ adapter removal reverse; ktrim=r k=23 mink=11 hdist=1 tpe tbo t=10
 phix filtering; k=31 hdist=1 t=4
 rRNA filtering; k=31 t=4 
 
-#### Human contaminant removal (BBMap)
+#### Human contaminant removal 
+BWA version (latest human genome)
+
+```shell
+
+```
+
+BBMAP version
 First need to index the genome
 
 ```shell
