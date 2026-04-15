@@ -24,14 +24,6 @@ kraken-build --add-to-library nr.gz --db kraken
 
 ```
 
-
-# Kaiju pipeline
-Kaiju needs a database - for taxonomy probably best to stick to the nr_euk database. Other, or custom options are available 
-
-## Download and setup database  
-```shell
-kaiju-makedb -s nr_euk 
-```
 ## Run Kraken
 
 ```shell
@@ -47,6 +39,17 @@ for FR in $PROJECT_FOLDER/data/cleaned/*_1*.fq.gz; do
   $PROJECT_FOLDER/data/kraken_taxonomy/ \
   20
 done
+```
+
+
+# Kaiju pipeline
+Kaiju needs a database - for taxonomy probably best to stick to the nr_euk database. Other, or custom options are available 
+
+
+
+## Download and setup database  
+```shell
+kaiju-makedb -s nr_euk 
 ```
 
 ## Run kaiju
