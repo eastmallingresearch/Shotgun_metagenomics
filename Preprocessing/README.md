@@ -46,13 +46,40 @@ phix filtering; k=31 hdist=1 t=4
 rRNA filtering; k=31 t=4 
 
 #### Human contaminant removal 
-BWA version (latest human genome)
+
+##### BWA version (latest human genome)
+This is the prefered method as human genome can be updated easily
+
+###### Index genome
 
 ```shell
+# Easiest one-file download from UCSC for latest genome
+wget -O hs1.fa.gz https://hgdownload.soe.ucsc.edu/goldenPath/hs1/bigZips/hs1.fa.gz
+gunzip -c hs1.fa.gz > hs1.fa
+
+# One-time indexing
+bwa-mem2 index hs1.fa
+samtools faidx hs1.fa
 
 ```
 
-BBMAP version
+###### Run Tool
+```shell
+for FR in "$PROJECT_FOLDER"/data/filtered/*_1*.fq.gz; do
+  RR=$(sed 's/_1/_2/' <<< "$FR")
+  sbatch \
+    --mem=40000 \
+    -p medium \
+    -c 20 \
+    "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/slurm/sub_bwa.sh \
+    "$PROJECT_FOLDER"/metagenomics_pipeline/common/resources/contaminants/bwa_human_ref/hs1.fa \
+    "$PROJECT_FOLDER"/data/cleaned \
+    "$FR" \
+    "$RR"
+done
+```
+
+##### BBMAP version
 First need to index the genome
 
 ```shell
