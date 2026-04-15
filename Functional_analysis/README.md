@@ -1,4 +1,4 @@
-# Functional analysis
+# Functional analysis and taxonomy 
 
 This is all in need of updating.  
 I have a working pipeline using Kaiju, but there are other methods available which can be of use.  
