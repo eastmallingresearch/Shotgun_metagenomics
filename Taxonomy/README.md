@@ -30,7 +30,7 @@ kraken-build --add-to-library nr.gz --db kraken
 for FR in $PROJECT_FOLDER/data/cleaned/*_1*.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
   S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $FR)
-  sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/   slurm/sub_kraken.sh \
+  sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kraken.sh \
   $PROJECT_FOLDER/PATHTOKRAKENDB \
   $FR \
   $RR \
