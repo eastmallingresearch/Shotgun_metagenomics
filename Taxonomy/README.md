@@ -22,6 +22,9 @@ wget -c https://refdb.s3.climb.ac.uk/maxikraken2_1903_140GB/taxo.k2d &
 kraken-build --download-taxonomy --db kraken
 kraken-build --add-to-library nr.gz --db kraken
 
+# prebuilt options
+wget https://genome-idx.s3.amazonaws.com/kraken/k2_pluspfp_20260226.tar.gz
+
 ```
 
 ## Run Kraken
