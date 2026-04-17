@@ -43,7 +43,7 @@ for FR in $PROJECT_FOLDER/data/cleaned/*_1*.fq.gz; do
   20
 done
 ```
-## Braken
+## Bracken
 Braken is used to estimate abundances from kraken reports.
 
 ```shell
