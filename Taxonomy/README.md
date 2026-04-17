@@ -33,17 +33,31 @@ wget https://genome-idx.s3.amazonaws.com/kraken/k2_pluspfp_20260226.tar.gz
 for FR in $PROJECT_FOLDER/data/cleaned/*_1*.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
   S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $FR)
-  sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kraken.sh \
+  sbatch --mem=250000 -p himem -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kraken.sh \
   $PROJECT_FOLDER/PATHTOKRAKENDB \
   $FR \
   $RR \
   ${S}.kraken.out \
   ${S}.kraken.report.out \
-  $PROJECT_FOLDER/data/kraken_taxonomy/ \
+  $PROJECT_FOLDER/data/taxonomy/kraken/ \
   20
 done
 ```
+## Braken
+Braken is used to estimate abundances from kraken reports.
 
+```shell
+for KR in $PROJECT_FOLDER/data/taxonomy/kraken/*.report.out; do
+  S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $KR)
+  sbatch --mem=20000 -p short $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_bracken.sh \
+  $PROJECT_FOLDER/PATHTOKRAKENDB \
+  $KR \
+  200 \ # read length
+  ${S} \
+  $PROJECT_FOLDER/data/taxonomy/bracken/ 
+done
+
+```
 
 # Kaiju pipeline
 Kaiju needs a database - for taxonomy probably best to stick to the nr_euk database. Other, or custom options are available 
