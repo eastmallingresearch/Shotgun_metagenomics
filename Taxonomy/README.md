@@ -43,11 +43,12 @@ for FR in $PROJECT_FOLDER/data/cleaned/*_1*.fq.gz; do
   20
 done
 ```
-## Bracken
+## Estimate abundances
+
 Braken is used to estimate abundances from kraken reports...
 
 However kraken seem to already do this  - and the output is more useful.   
-The below is fast, but doesn't give the full taxonomy, only the level bracken was run at (e.g. only gives species, not the full taxonomy).   
+The below is the standard bracken pipeline. It's fast, but doesn't give the full taxonomy, only the level bracken was run at (e.g. only gives species, not the full taxonomy).   
 
 ```shell
 for KR in $PROJECT_FOLDER/data/taxonomy/kraken/*.report.out; do
