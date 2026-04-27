@@ -13,7 +13,9 @@ Megahit uses a lot less (~1/4) memory than MetaSPAdes
 
 #### Genomic bins
 
-##### Taxonomy assignment
+##### [Taxonomy](../master/Taxonomy/README.md)
+
+Taxonomy assignment
 Metakallisto/kracken/centrifuge?
 
 ## Assembly free binning
