@@ -4,7 +4,7 @@
 
 ## [Taxonomy](../master/Taxonomy/README.md)
 
-### [Functional analysis](../master/Binning/README.md)
+### [Functional analysis](../master/Functional_analysis/README.md)
 
 
 ## [Assembly](../master/Assembly/README.md)
