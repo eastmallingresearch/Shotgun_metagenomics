@@ -264,7 +264,7 @@ sbatch --mem=20G -p medium -c 1 $PROJECT_FOLDER/metagenomics_pipeline/scripts/su
 done
 ```
 
-#### Produce counts and taxonomy
+#### Produce counts
 
 ```R
 library(data.table)
@@ -292,49 +292,31 @@ countData <- countData[,lapply(.SD, function(x) {x[is.na(x)] <- "0" ; x})]
 setnames(countData,"V1","taxon_id")
 ```
 
+##### Get taxonomy
 
 Using sql is one way of doing this 
-Use names.dmp and nodes.dmp from kaiju download (or directly from NCBI - they're taxonomy file) to create sqlite database
+Use names.dmp and nodes.dmp from kaiju download (or directly from NCBI - they're taxonomy files) to create sqlite database
 
-create-sqlite.sh can create a taxonomy database from names.dmp and nodes.dmp
+create_sql_taxonomy.sh can create a taxonomy database from names.dmp and nodes.dmp
+
+The name and nodes files need to be in the same folder as the sqlite script.  
+
+The names and nodes files have an odd separator field \t|\t possibly. It's possibly best to remove tabs from the files before making the databases - I think I've resolved this in the latest version of the creation script
 
 ```shell
 create_sql_taxonomy.sh
 ```
 
-The name and nodes files need to be in the same folder as the sqlite script.  
 
-The names and nodes files have an odd separator field \t|\t possibly. It's best to remove tabs from the files before making the databases
+Below is a sql script to query the taxonomy database  - but it's possibly easier to do everything in R rather than via sqlite directly. 
 
-Below is a sql script to query the taxonomy database  - but it's possibly easier to do everything in R rather than via sqlite directly
+lookup_taxonomy.sh will query the database given the db and a list of taxids
 
-```sql
--- recursive query to get all parents of id
-WITH RECURSIVE
-  taxonomy(i) AS (
-    VALUES(2927976)
-    UNION
-    SELECT parent_taxID FROM nodes,taxonomy
-    WHERE nodes.taxID = taxonomy.i
-  )
-  SELECT nodes.rank,nodes.taxID,name FROM nodes
-  INNER JOIN names ON 
-  nodes.taxID = names.taxID
-  WHERE nodes.taxID IN taxonomy AND names.name_class="scientific name";
-
--- no rank|1|root
--- superkingdom|2|Bacteria
--- genus|44675|Geothrix
--- phylum|57723|Acidobacteriota
--- no rank|131567|cellular organisms
--- class|533205|Holophagae
--- order|574975|Holophagales
--- family|574976|Holophagaceae
--- no rank|2647902|unclassified Geothrix
--- species|2927976|Geothrix sp. Red802
+```shell
+bash lookup_taxonomy.sh ncbi_taxonomy.sqlite taxids.txt taxonomy_results.tsv
 ```
 
-It's a lot easier to do the querying via R than sqlite (well I think so)
+Possibly easier to do everything in R than sqlite (well I think so)
 The below runs the sql query via sqldf - the whole lot could probably be replaced with some, megaverbose(TM) dplyr code.
 
 ```r
