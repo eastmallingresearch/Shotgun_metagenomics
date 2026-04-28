@@ -299,25 +299,12 @@ Use names.dmp and nodes.dmp from kaiju download (or directly from NCBI - they're
 create-sqlite.sh can create a taxonomy database from names.dmp and nodes.dmp
 
 ```shell
-create_sqlite_taxonomy.sh
+create_sql_taxonomy.sh
 ```
 
 The name and nodes files need to be in the same folder as the sqlite script.  
 
 The names and nodes files have an odd separator field \t|\t possibly. It's best to remove tabs from the files before making the databases
-
-```shell
-sed -i 's/\t//g' names.dmp > names_tabless.dmp
-sed -i 's/\t//g' nodes.dmp > nodes_tabless.dmp
-
-```
-
-Imports the files into two tables named as above (the script will throw up a lot of info messages as both cmp files contain a lot of irrelevent columns - there's no way to suppress these messages in sqlite [as far as I know])
-
-
-```shell
-./create-sqlite.sh taxonomy.db
-```
 
 Below is a sql script to query the taxonomy database  - but it's possibly easier to do everything in R rather than via sqlite directly
 
