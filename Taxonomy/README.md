@@ -299,43 +299,7 @@ Use names.dmp and nodes.dmp from kaiju download (or directly from NCBI - they're
 create-sqlite.sh can create a taxonomy database from names.dmp and nodes.dmp
 
 ```shell
-#!/bin/bash
-
-# create-sqlite.sh 
-# create-sqlite.sh [NAME.db]
-
-dbfile=$1
-shift
-
-sqlite3 <<EOT
-.open $dbfile
-CREATE TABLE names (
-	taxID INT, 
-	name VARCHAR(300), 
-	unique_name VARCHAR(300), 
-	name_class VARCHAR(300)
-);
-	
-CREATE TABLE nodes (
-	taxID INT, 
-	parent_taxID INT, 
-	rank VARCHAR(300)
-);
-
-.shell echo Importing names
-.separator '|'
-.import names_tabless.dmp names
-.shell echo Indexing names.
-CREATE INDEX name_idx ON names(taxID);
-CREATE INDEX name_class ON names (name,name_class);
-
-.shell echo Importing nodes
-.separator '|'
-.import names_tabless.dmp nodes
-.shell echo Indexing nodes.
-CREATE INDEX nodes_idx ON nodes(taxID);
-
-EOT
+create_sqlite_taxonomy.sh
 ```
 
 The name and nodes files need to be in the same folder as the sqlite script.  
