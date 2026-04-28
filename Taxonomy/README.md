@@ -211,7 +211,7 @@ kaiju-makedb -s nr_euk
 for FR in $PROJECT_FOLDER/data/cleaned/*_1*.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
   S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $FR)
-  sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/sub_kaiju.sh \
+  sbatch --mem=200000 -p himem -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/sub_kaiju.sh \
   $PROJECT_FOLDER/data/kaiju/nodes.dmp \
   $PROJECT_FOLDER/data/kaiju/names.dmp \
   $PROJECT_FOLDER/data/kaiju/nr_euk/kaiju_db_nr_euk.fmi \
@@ -256,7 +256,7 @@ Will assign multimapping reads based on the proportion of uniqueliy mapped reads
 # correct counts
 for K in $PROJECT_FOLDER/data/kaiju_taxonomy/${P1}*.out; do
 S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $K)
-sbatch --mem=80G -p short -c 1 $PROJECT_FOLDER/metagenomics_pipeline/scripts/sub_kaiju_correct_counts.sh \
+sbatch --mem=20G -p medium -c 1 $PROJECT_FOLDER/metagenomics_pipeline/scripts/sub_kaiju_correct_counts.sh \
  $K \
  $S \
  $PROJECT_FOLDER/data/kaiju_results \
