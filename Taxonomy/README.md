@@ -33,7 +33,7 @@ wget https://genome-idx.s3.amazonaws.com/kraken/k2_pluspfp_20260226.tar.gz
 for FR in $PROJECT_FOLDER/data/cleaned/*_1*.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
   S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $FR)
-  sbatch --mem=250000 -p himem -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kraken.sh \
+  sbatch --mem=250000 -p himem -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/sub_kraken.sh \
   $PROJECT_FOLDER/PATHTOKRAKENDB \
   $FR \
   $RR \
@@ -53,7 +53,7 @@ The below is the standard bracken pipeline. It's fast, but doesn't give the full
 ```shell
 for KR in $PROJECT_FOLDER/data/taxonomy/kraken/*.report.out; do
   S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $KR)
-  sbatch --mem=20000 -p short $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_bracken.sh \
+  sbatch --mem=20000 -p short $PROJECT_FOLDER/metagenomics_pipeline/scripts/sub_bracken.sh \
   $PROJECT_FOLDER/PATHTOKRAKENDB \
   $KR \
   200 \ # read length
@@ -211,7 +211,7 @@ kaiju-makedb -s nr_euk
 for FR in $PROJECT_FOLDER/data/cleaned/*_1*.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
   S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $FR)
-  sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju.sh \
+  sbatch --mem=120000 -p medium -c 20 $PROJECT_FOLDER/metagenomics_pipeline/scripts/sub_kaiju.sh \
   $PROJECT_FOLDER/data/kaiju/nodes.dmp \
   $PROJECT_FOLDER/data/kaiju/names.dmp \
   $PROJECT_FOLDER/data/kaiju/nr_euk/kaiju_db_nr_euk.fmi \
@@ -227,7 +227,7 @@ done
 
 The below works but it is better to use the script for corrected counts further down
 
-Best bet is to use kaiju tools to create a table of counts at the species rank - this can then be manipulated in R  
+Use kaiju tools to create a table of counts at the species rank - this can then be manipulated in R  
 The kaiju2table program is fast.
 
 ```shell
@@ -256,11 +256,11 @@ Will assign multimapping reads based on the proportion of uniqueliy mapped reads
 # correct counts
 for K in $PROJECT_FOLDER/data/kaiju_taxonomy/${P1}*.out; do
 S=$(sed 's/\(.*\/\)\(.*_1\)\(\..*\)/\2/' <<< $K)
-sbatch --mem=80G -p short -c 1 $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm/sub_kaiju_correct_counts.sh \
+sbatch --mem=80G -p short -c 1 $PROJECT_FOLDER/metagenomics_pipeline/scripts/sub_kaiju_correct_counts.sh \
  $K \
  $S \
  $PROJECT_FOLDER/data/kaiju_results \
- $PROJECT_FOLDER/metagenomics_pipeline/scripts/slurm
+ $PROJECT_FOLDER/metagenomics_pipeline/scripts
 done
 ```
 
