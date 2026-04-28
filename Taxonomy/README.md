@@ -313,8 +313,9 @@ lookup_taxonomy.sh will query the database given the db and a list of taxids
 ```shell
 bash lookup_taxonomy.sh ncbi_taxonomy.sqlite taxids.txt taxonomy_results.txt
 ```
-```shell
-awk -F"\t2" '{print $1}' < countData.txt|lookup_taxonomy.sh  
+
+```
+lookup_taxonomy.sh  ncbi_taxonomy.sqlite countData.txt taxData.txt
 ```
 
 Possibly easier to do everything in R than sqlite (well I think so)
