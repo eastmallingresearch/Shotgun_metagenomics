@@ -273,6 +273,7 @@ library(tidyverse)
 file_suffix <- gsub("\\..*","",list.files(".",".*corrected.counts$",full.names=F,recursive=F))
 
 # load count files
+
 qq <- lapply(file_suffix,function(i) fread(paste0(i,".corrected.counts"))) 
 
 # apply names to appropriate list columns (enables easy joining of all count tables)
@@ -283,13 +284,11 @@ countData <- Reduce(function(...) {merge(..., all = TRUE)}, qq)
 
 # NA to 0
 countData <- countData[,lapply(.SD, function(x) {x[is.na(x)] <- "0" ; x})]
-# 
-# # add OTU column
-# countData[,OTU:=paste0("OTU",1:nrow(countData))]
-# 
-# count_cols <- names(countData)[-1]
-# countData[,(count_cols):=lapply(.SD,as.numeric),.SDcols=count_cols]
+
+# Edit names
 setnames(countData,"V1","taxon_id")
+
+fwrite(countData,"countData.txt",sep="\t",quote=F,row.names=F,col.names=T)
 ```
 
 ##### Get taxonomy
@@ -307,13 +306,15 @@ The names and nodes files have an odd separator field \t|\t possibly. It's possi
 create_sql_taxonomy.sh
 ```
 
-
 Below is a sql script to query the taxonomy database  - but it's possibly easier to do everything in R rather than via sqlite directly. 
 
 lookup_taxonomy.sh will query the database given the db and a list of taxids
 
 ```shell
-bash lookup_taxonomy.sh ncbi_taxonomy.sqlite taxids.txt taxonomy_results.tsv
+bash lookup_taxonomy.sh ncbi_taxonomy.sqlite taxids.txt taxonomy_results.txt
+```
+```shell
+awk -F"\t2" '{print $1}' < countData.txt|lookup_taxonomy.sh  
 ```
 
 Possibly easier to do everything in R than sqlite (well I think so)
