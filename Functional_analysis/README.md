@@ -85,8 +85,6 @@ Kaiju outputs a list of GenBank/Refseq protein IDs. These can be mapped to other
 
 
 
-
-
 The uniprot mapping file contains the majority of useful accessions
 
 ```shell
@@ -96,7 +94,24 @@ wget https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase
 # Uniprot complete mpping file
 https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping.dat.gz
 ```
-`
+Possible mappings to download:
+idmapping.dat.gz
+goa_uniprot_all.gaf.gz
+go-basic.obo
+protein2ipr.dat.gz
+interpro2go
+rhea2uniprot_sprot.tsv
+rhea2uniprot_trembl.tsv.gz
+rhea2ec.tsv
+rhea2go.tsv
+rhea2kegg_reaction.tsv
+enzyme.dat
+eggNOG OG info / protein family files
+dbCAN databases
+TCDB mappings
+MEROPS accession / FASTA libraries
+NCBI PGAP HMMs
+AMRFinderPlus database
 
 
 Useful final annotations:
