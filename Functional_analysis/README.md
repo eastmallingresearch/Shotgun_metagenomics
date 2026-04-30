@@ -1,13 +1,114 @@
 # Functional analysis and taxonomy 
 
-This is all in need of updating.  
-I have a working pipeline using Kaiju, but there are other methods available which can be of use.  
-However most of them are, so far, not worth implementing for complex microbiomes (i.e. anything that is not model organism related).  
-This will change as more data is added to public databases.  
+The are now quite a few options in this space, Megan +DIAMOND, MetaLAFFA (uses Diamond), SqueezeMeta, Humann3.
+  
+However none of them seem more suited than using the output from Kaiju (which is orders of magnitude faster than DIAMOND - there's MMseqs2 which might be a good replacement).
+  
 
-Carnelian (no longer developed???) and Humann3 are worth exploring. Humann3 does work, but the couple of times I've used it, it didn't produce any useful results - it also relies on full alignment (alignment files can be deleted after run), and is just generally slow. Has potential to be useful, and I'm going to take another look to ensure I implementes correctly.
+Kaiju outputs a list of GenBank/Refseq protein IDs. These can be mapped to other systems to unlock various functional annotations
 
-## Kaiju pipeline
+
+## Mapping files
+
+The uniprot mapping file contains the majority of useful accessions
+
+```shell
+# UNIPROT selected mapping file
+wget https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping_selected.tab.gz
+# columns: UniProtKB-AC,UniProtKB-ID,GeneID,RefSeq,GI,PDB,GO,UniRef100,UniRef90,UniRef50,UniParc,PIR,NCBI-taxon,MIM,UniGene,PubMed,EMBL,EMBL-CDS,Ensembl,Ensembl_TRS,Ensembl_PRO,Additional PubMed
+# Uniprot complete mpping file
+https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping.dat.gz
+
+```
+Useful final annotations:
+EMBL-CDS
+UniRef90 / UniRef50
+GO
+eggNOG
+KEGG
+NCBI_TaxID
+RefSeq
+UniParc
+
+Primary sequence cluster layer:
+  UniRef90 or UniRef50
+
+Primary function layer:
+  eggNOG
+  KEGG-derived KO / module / pathway
+  GO
+
+Primary domain enrichment:
+  InterPro (protein2ipr.dat.gz)
+
+Secondary/domain-specific enrichment:
+  Pfam
+
+Do not blindly report both InterPro and Pfam as independent results.
+
+Enzymes:
+EC
+Rhea
+GO Molecular Function
+KEGG reaction / KO where available
+MetaCyc/BioCyc reaction or pathway where available
+Use EC for broad enzyme-class enrichment.
+Use Rhea for precise reaction-level enrichment.
+Use KEGG/MetaCyc/BioCyc for pathway-level summaries.
+
+CAZy family
+dbCAN family
+CAZyme class: GH, GT, PL, CE, AA, CBM
+
+Metabolism-specialized layer:
+  BioCyc / MetaCyc-like mappings
+  UniPathway
+  TCDB
+  MEROPS
+
+Context layers:
+  NCBI_TaxID
+  source accession type
+  UniProt reviewed/unreviewed status, if you add that from UniProtKB
+
+To extract from id mapping:
+UniProtKB-ID
+UniParc
+UniRef100
+UniRef90
+UniRef50
+RefSeq
+RefSeq_NT
+EMBL
+EMBL-CDS
+GO
+GeneID
+Gene_Name
+Gene_OrderedLocusName
+Gene_ORFName
+Gene_Synonym
+NCBI_TaxID
+eggNOG
+KEGG
+BioCyc
+UniPathway
+Reactome
+PlantReactome
+TCDB
+MEROPS
+PHI-base
+STRING
+OMA
+OrthoDB
+HOGENOM
+GeneTree
+PATRIC
+VEuPathDB
+EnsemblGenome
+EnsemblGenome_PRO
+EnsemblGenome_TRS
+
+## Kaiju functional analysis
 
 ### [Taxonomy](../master/Taxonomy/README.md)
 
@@ -17,7 +118,7 @@ Run the kaiju taxonomy scripts first
 
 The output data contains a huge number of proteins, almost all which can not be distinguished at the functional level - they may have different functions, but the details are not yet available. Due to this massive duplication, it makes sense to shrink the data down to unique protein functions.  
 
-Below is a short bit of R code to do this. Not all steps are stricktly neccessary (the DESeq stuff can all be dropped if it's not going to be used)
+Below is a short bit of R code to do this. Not all steps are strictly neccessary (the DESeq stuff can all be dropped if it's not going to be used)
 
 ```R
 ## Load required libraries
