@@ -10,6 +10,20 @@ Kaiju outputs a list of GenBank/Refseq protein IDs. These can be mapped to other
 
 ## Mapping files
 
+
+| Layer                    | Main files / locations                                                                                                                                                                                                      | Notes                                                                                                                                                                                             |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UniProt ID spine         | `https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping.dat.gz`                                                                                                                    | Your main 3-column backbone: `UniProtKB-AC, ID_type, ID`.                                                                                                                                         |
+| UniProt selected mapping | `https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping_selected.tab.gz`                                                                                                           | Wide version with `RefSeq`, `EMBL-CDS`, `GO`, `UniRef90`, etc.                                                                                                                                    |
+| UniProtKB full records   | `https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.dat.gz``````https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_trembl.dat.gz` | Use only if you want to parse richer `DR`, `CC`, EC, Rhea, keywords, comments, reviewed status.                                                                                                   |
+| GO annotations           | `https://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/goa_uniprot_all.gaf.gz`                                                                                                                                                 | Full UniProt-GOA annotation file; good for UniProtKB accession → GO. GOA says these files include manual and computational annotations and are released roughly every four weeks. ([EMBL-EBI][1]) |
+| GO ontology              | `https://current.geneontology.org/ontology/go-basic.obo``````https://current.geneontology.org/ontology/go.json`                                                                                                             | Needed for parent-term propagation, slim mapping, enrichment rollups.                                                                                                                             |
+| GO external mappings     | `https://ftp.ebi.ac.uk/pub/databases/GO/goa/external2go/`                                                                                                                                                                   | Includes mappings like `interpro2go`, `ec2go`, `rhea2go`, etc.; GOA describes these as mappings from InterPro, EC, HAMAP, UniProt keywords, locations, etc. to GO. ([EMBL-EBI][2])                |
+
+[1]: https://www.ebi.ac.uk/GOA/?utm_source=chatgpt.com "GOA | European Bioinformatics Institute"
+[2]: https://www.ebi.ac.uk/GOA/downloads.html?utm_source=chatgpt.com "Downloads | European Bioinformatics Institute"
+
+
 The uniprot mapping file contains the majority of useful accessions
 
 ```shell
@@ -18,6 +32,11 @@ wget https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase
 # columns: UniProtKB-AC,UniProtKB-ID,GeneID,RefSeq,GI,PDB,GO,UniRef100,UniRef90,UniRef50,UniParc,PIR,NCBI-taxon,MIM,UniGene,PubMed,EMBL,EMBL-CDS,Ensembl,Ensembl_TRS,Ensembl_PRO,Additional PubMed
 # Uniprot complete mpping file
 https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping.dat.gz
+
+```
+
+```shell
+
 
 ```
 Useful final annotations:
@@ -30,46 +49,38 @@ NCBI_TaxID
 RefSeq
 UniParc
 
-Primary sequence cluster layer:
-  UniRef90 or UniRef50
+Sequence / clustering:
+  UniRef90
+  UniRef50
+  UniParc
+  UniProtKB accession
+  NCBI_TaxID
 
-Primary function layer:
-  eggNOG
-  KEGG-derived KO / module / pathway
+General function:
   GO
-
-Primary domain enrichment:
-  InterPro (protein2ipr.dat.gz)
-
-Secondary/domain-specific enrichment:
+  InterPro
   Pfam
+  eggNOG / COG
+  KEGG KO
 
-Do not blindly report both InterPro and Pfam as independent results.
-
-Enzymes:
-EC
-Rhea
-GO Molecular Function
-KEGG reaction / KO where available
-MetaCyc/BioCyc reaction or pathway where available
-Use EC for broad enzyme-class enrichment.
-Use Rhea for precise reaction-level enrichment.
-Use KEGG/MetaCyc/BioCyc for pathway-level summaries.
-
-CAZy family
-dbCAN family
-CAZyme class: GH, GT, PL, CE, AA, CBM
-
-Metabolism-specialized layer:
-  BioCyc / MetaCyc-like mappings
+Enzyme / reaction / pathway:
+  EC
+  Rhea
+  KEGG reaction / module / pathway
+  BioCyc / MetaCyc
   UniPathway
+
+Soil-relevant specialist function:
+  CAZy / dbCAN
   TCDB
   MEROPS
+  TIGRFAMs / NCBIfam
+  CARD / AMRFinderPlus, optional but useful
 
-Context layers:
+Context / interpretation:
   NCBI_TaxID
-  source accession type
-  UniProt reviewed/unreviewed status, if you add that from UniProtKB
+  source database accession type
+  reviewed/unreviewed UniProt status, if you can add it
 
 To extract from id mapping:
 UniProtKB-ID
