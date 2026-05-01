@@ -117,14 +117,14 @@ AMRFinderPlus database
 
 
 Useful final annotations:  
-EMBL-CDS  (idmapping_selected.tab.gz 18)
-UniRef90 / UniRef50  (idmapping_selected.tab.gz 9, 10)
-GO  (idmapping_selected.tab.gz 7)
-eggNOG  (idmapping.dat.gz)
-KEGG  (idmapping.dat.gz)
-NCBI_TaxID  (idmapping_selected.tab.gz 13)
-RefSeq  (idmapping_selected.tab.gz 4)
-UniParc  (idmapping_selected.tab.gz 11)
+EMBL-CDS  (idmapping_selected.tab.gz 18)  
+UniRef90 / UniRef50  (idmapping_selected.tab.gz 9, 10)  
+GO  (idmapping_selected.tab.gz 7)  
+eggNOG  (idmapping.dat.gz)  
+KEGG  (idmapping.dat.gz)  
+NCBI_TaxID  (idmapping_selected.tab.gz 13)  
+RefSeq  (idmapping_selected.tab.gz 4)  
+UniParc  (idmapping_selected.tab.gz 11)  
 
 Sequence / clustering:  
   UniRef90  (idmapping_selected.tab.gz 9)
@@ -135,8 +135,8 @@ Sequence / clustering:
 
 General function:  
   GO  (idmapping_selected.tab.gz 7)
-  InterPro  (idmapping.dat.gz)
-  Pfam  (idmapping.dat.gz)
+  InterPro ..  
+  Pfam  ..  
   eggNOG / COG  (idmapping.dat.gz)
   KEGG KO  (idmapping.dat.gz)
 
