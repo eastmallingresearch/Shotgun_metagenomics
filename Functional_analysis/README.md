@@ -162,12 +162,14 @@ Context / interpretation:
 
 ### Mapping files
 
-Most of the important mapping are already in idmapping_selected.tab.gz, if not nearly all the rest are in idmapping.dat.gz
+Most of the important mapping are already in `idmapping_selected.tab.gz`, if not nearly all the rest are in idmapping.dat.gz
 
 ```shell
 # extract extra accessions from idmapping.dat.gz
-
+pigz -dc idmapping.dat.gz | LC_ALL=C grep -E $'\t(eggNOG|KEGG|BioCyc|TCDB|MEROPS)\t'   > idmapping_eggNOG_KEGG_BioCyc_TCDB_MEROPS.dat
 ```
+Then combine the output wih `idmapping_selected.tab.gz`
+
 
 
 ## Kaiju functional analysis
