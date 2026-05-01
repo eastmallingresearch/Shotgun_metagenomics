@@ -339,9 +339,6 @@ GO_EXT_BASE="https://ftp.ebi.ac.uk/pub/databases/GO/goa/external2go"
 
 for f in \
     interpro2go \
-    ec2go \
-    rhea2go \
-    metacyc2go \
     hamap2go \
     uniprotkb_kw2go \
     uniprotkb_sl2go \
@@ -426,9 +423,9 @@ try_get "https://ftp.expasy.org/databases/enzyme/enzclass.txt" "$DBROOT/enzyme"
 # Optional ChEBI ontology/metadata; useful for interpreting Rhea participants.
 CHEBI_BASE="https://ftp.ebi.ac.uk/pub/databases/chebi"
 try_get "$CHEBI_BASE/ontology/chebi.obo" "$DBROOT/chebi"
-try_get "$CHEBI_BASE/Flat_file_tab_delimited/compounds.tsv.gz" "$DBROOT/chebi"
-try_get "$CHEBI_BASE/Flat_file_tab_delimited/database_accession.tsv.gz" "$DBROOT/chebi"
-try_get "$CHEBI_BASE/Flat_file_tab_delimited/relation.tsv.gz" "$DBROOT/chebi"
+try_get "$CHEBI_BASE/flat_files/compounds.tsv.gz" "$DBROOT/chebi"
+try_get "$CHEBI_BASE/flat_files/database_accession.tsv.gz" "$DBROOT/chebi"
+try_get "$CHEBI_BASE/flat_files/relation.tsv.gz" "$DBROOT/chebi"
 
 ###############################################################################
 # 6. eggNOG: orthology + predicted functional summaries
@@ -441,6 +438,8 @@ log "eggNOG v7 files"
 # If they fail, it saves the downloads page for manual link extraction.
 EGGNOG_DIR="$DBROOT/eggnog"
 mkdir -p "$EGGNOG_DIR"
+
+#https://eggnogdb.org/public/eggnog7/e7.og_info_kegg_go.tsv.gz
 
 # Try the likely direct URLs.
 for f in \
@@ -472,16 +471,16 @@ fi
 
 log "OrthoDB v12 files"
 
-ORTHODB_BASE="https://data.orthodb.org/v12/download"
+ORTHODB_BASE="https://data.orthodb.org/v12/download/odb_data_dump"
 
 for f in \
     README.txt \
-    odb12v1_species.tab.gz \
-    odb12v1_levels.tab.gz \
-    odb12v1_level2species.tab.gz \
-    odb12v1_OGs.tab.gz \
-    odb12v1_OG_xrefs.tab.gz \
-    odb12v1_OG_pairs.tab.gz
+    odb12v2_species.tab.gz \
+    odb12v2_levels.tab.gz \
+    odb12v2_level2species.tab.gz \
+    odb12v2_OGs.tab.gz \
+    odb12v2_OG_xrefs.tab.gz \
+    odb12v2_OG_pairs.tab.gz
 do
     get "$ORTHODB_BASE/$f" "$DBROOT/orthodb/v12"
 done
@@ -489,11 +488,11 @@ done
 # Very large OrthoDB protein/gene mapping files.
 if [ "$RUN_HUGE" = "1" ]; then
     for f in \
-        odb12v1_genes.tab.gz \
-        odb12v1_gene_xrefs.tab.gz \
-        odb12v1_OG2genes.tab.gz \
-        odb12v1_aa_fasta.gz \
-        odb12v1_og_aa_fasta.gz
+        odb12v2_genes.tab.gz \
+        odb12v2_gene_xrefs.tab.gz \
+        odb12v2_OG2genes.tab.gz \
+        odb12v2_aa_fasta.gz \
+        odb12v2_og_aa_fasta.gz
     do
         get "$ORTHODB_BASE/$f" "$DBROOT/orthodb/v12"
     done
@@ -539,8 +538,7 @@ fi
 ###############################################################################
 
 log "MEROPS peptidase/protease files"
-
-MEROPS_BASE="https://www.ebi.ac.uk/merops/download"
+MEROPS_BASE="ftp.ebi.ac.uk/pub/databases/merops/current_release"
 
 # These filenames are listed on the MEROPS download page. Some servers redirect;
 # try_get makes this non-fatal.
@@ -581,8 +579,8 @@ else
         release.txt \
         hmm_PGAP.HMM.tgz \
         hmm_PGAP.SEED.tgz \
-        hmm_PGAP.HMM.tsv \
-        hmm_PGAP.LIB.tgz
+        for-interpro.tsv \
+        hmm_PGAP.LIB
     do
         try_get "https://ftp.ncbi.nlm.nih.gov/hmm/current/$f" "$DBROOT/ncbi_hmm/current"
     done
@@ -709,7 +707,7 @@ fi
 cat > "$DBROOT/biocyc_metacyc_NOTE.txt" <<'EOF'
 BioCyc / MetaCyc:
   Bulk flat files are generally downloaded after accepting the BioCyc/MetaCyc
-  license terms from the BioCyc download site.
+  license terms from the BioCyc download site. 
 
 Useful files after download commonly include:
   pathways.dat
