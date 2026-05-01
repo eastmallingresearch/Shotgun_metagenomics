@@ -117,45 +117,45 @@ AMRFinderPlus database
 
 
 Useful final annotations:  
-EMBL-CDS  
-UniRef90 / UniRef50  
-GO  
-eggNOG  
-KEGG  
-NCBI_TaxID  
-RefSeq  
-UniParc  
+EMBL-CDS  (idmapping_selected.tab.gz 18)
+UniRef90 / UniRef50  (idmapping_selected.tab.gz 9, 10)
+GO  (idmapping_selected.tab.gz 7)
+eggNOG  (idmapping.dat.gz)
+KEGG  (idmapping.dat.gz)
+NCBI_TaxID  (idmapping_selected.tab.gz 13)
+RefSeq  (idmapping_selected.tab.gz 4)
+UniParc  (idmapping_selected.tab.gz 11)
 
 Sequence / clustering:  
-  UniRef90  
-  UniRef50  
-  UniParc  
-  UniProtKB accession  
-  NCBI_TaxID  
+  UniRef90  (idmapping_selected.tab.gz 9)
+  UniRef50  (idmapping_selected.tab.gz 10)
+  UniParc  (idmapping_selected.tab.gz 11)
+  UniProtKB accession  (idmapping_selected.tab.gz 1 and 2)
+  NCBI_TaxID  (idmapping_selected.tab.gz 13)
 
 General function:  
-  GO  
-  InterPro  
-  Pfam  
-  eggNOG / COG  
-  KEGG KO  
+  GO  (idmapping_selected.tab.gz 7)
+  InterPro  (idmapping.dat.gz)
+  Pfam  (idmapping.dat.gz)
+  eggNOG / COG  (idmapping.dat.gz)
+  KEGG KO  (idmapping.dat.gz)
 
 Enzyme / reaction / pathway:  
-  EC  
-  Rhea  
-  KEGG reaction / module / pathway  
-  BioCyc / MetaCyc  
-  UniPathway  
+  EC  ...
+  Rhea  .. 
+  KEGG reaction / module / pathway  (idmapping.dat.gz)
+  BioCyc / MetaCyc  (idmapping.dat.gz)
+  UniPathway  (idmapping.dat.gz)
 
 Soil-relevant specialist function:  
-  CAZy / dbCAN  
-  TCDB  
-  MEROPS  
-  TIGRFAMs / NCBIfam  
+  CAZy / dbCAN  ..
+  TCDB  (idmapping.dat.gz)
+  MEROPS  (idmapping.dat.gz)
+  TIGRFAMs / NCBIfam  ...
   CARD / AMRFinderPlus, optional but useful  
 
 Context / interpretation:  
-  NCBI_TaxID  
+  NCBI_TaxID  (idmapping_selected.tab.gz 13)
   source database accession type  
   reviewed/unreviewed UniProt status, if you can add it  
 
@@ -164,42 +164,11 @@ Context / interpretation:
 
 Most of the important mapping are already in idmapping_selected.tab.gz, if not nearly all the rest are in idmapping.dat.gz
 
-To extract from id mapping:  
-UniProtKB-ID = 2  
-UniParc = 11  
-UniRef100 = 8  
-UniRef90 = 9  
-UniRef50 = 10  
-RefSeq = 4  
-RefSeq_NT = idmapping.dat.gz  
-EMBL = 17  
-EMBL-CDS  
-GO = 7  
-GeneID = 3  
-Gene_Name = idmapping.dat.gz  
-Gene_OrderedLocusName = idmapping.dat.gz  
-Gene_ORFName  = idmapping.dat.gz  
-Gene_Synonym  = idmapping.dat.gz  
-NCBI_TaxID = 13  
-eggNOG  = idmapping.dat.gz  
-KEGG = idmapping.dat.gz  
-BioCyc  = idmapping.dat.gz  
-UniPathway  = idmapping.dat.gz  
-Reactome  = idmapping.dat.gz  
-PlantReactome  = idmapping.dat.gz  
-TCDB  = idmapping.dat.gz  
-MEROPS  = idmapping.dat.gz  
-PHI-base  = idmapping.dat.gz  
-STRING  = idmapping.dat.gz  
-OMA  = idmapping.dat.gz  
-OrthoDB  = idmapping.dat.gz  
-HOGENOM  = idmapping.dat.gz  
-GeneTree  = idmapping.dat.gz  
-PATRIC  = idmapping.dat.gz  
-VEuPathDB  = idmapping.dat.gz  
-EnsemblGenome = 19  
-EnsemblGenome_PRO = 21  
-EnsemblGenome_TRS = 20  
+```shell
+# extract extra accessions from idmapping.dat.gz
+
+```
+
 
 ## Kaiju functional analysis
 
