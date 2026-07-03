@@ -51,4 +51,7 @@ for FR in $PROJECT_FOLDER/data/corrected/*_1.corrected.fq.gz; do
   $PREFIX \
   -k 21,33,55,77
 done
-``` 
+```
+
+# Alignment with minimap2
+
