@@ -8,7 +8,7 @@ REVERSE=$1;shift
 OUTPUT=$1;shift
 REPORT=$1;shift
 OUTDIR=$1;shift
-THREADS=$1;shift
+CORES=$1;shift
 
 # make session temp directory
 mkdir $TMPDIR/${SLURM_JOB_USER}_${SLURM_JOBID}
@@ -18,7 +18,7 @@ cd $TMPDIR/${SLURM_JOB_USER}_${SLURM_JOBID}
 
 
 kraken2 --db $DBPATH \
-        --threads $THREADS \
+        --threads $CORES \
         --paired \
 		--gzip-compressed \
         --output $OUTPUT \
