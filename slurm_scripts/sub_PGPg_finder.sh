@@ -6,7 +6,7 @@ FORWARD=$1;shift
 REVERSE=$1;shift
 OUTDIR=$1;shift
 DB=$1;shift
-THREADS=$1;shift
+CORES=$1;shift
 
 # make session temp directory
 mkdir $TMPDIR/${SLURM_JOB_USER}_${SLURM_JOBID}
@@ -77,7 +77,7 @@ diamond blastx -d "$DB" \
   -q $F.merged.fa \
   -o OUTPUT/${F}_diamond.txt \
   -k 1 \
-  -p $THREADS \
+  -p $CORES \
   -e "$evalue" \
   --id "$min_identity" \
   --query-cover "$min_query_cover" \
