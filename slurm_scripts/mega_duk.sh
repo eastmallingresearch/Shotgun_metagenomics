@@ -1,7 +1,7 @@
 #!/bin/bash -l
-#SBATCH -J megafilt
+#SBATCH -J megaduk
 #sBATCH --mem=40000
-#SBATCH -o megafilt_"%j".out
+#SBATCH -o megaduk_"%j".out
 
 TRUSEQ=$1; shift
 PHIXREF=$1; shift
