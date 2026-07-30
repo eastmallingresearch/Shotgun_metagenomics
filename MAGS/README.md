@@ -1,4 +1,6 @@
-# Set up environment
+# Common pipeline
+
+## Set up environment
 
 ```shell
 PROJECT_FOLDER=~/projects/MYPROJECT
@@ -8,10 +10,11 @@ mkdir $PROJECT_FOLDER/data
 mkdir $PROJECT_FOLDER/data/fastq
 mkdir $PROJECT_FOLDER/data/filtered
 mkdir $PROJECT_FOLDER/data/cluster
+mkdir $PROJECT_FOLDER/data/assembled
 
 ```
 
-# Adapter removal and contaminant filtering
+## Adapter removal and contaminant filtering
 ```shell
 for FR in $PROJECT_FOLDER/data/fastq/*_1.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< $FR)
@@ -26,7 +29,7 @@ for FR in $PROJECT_FOLDER/data/fastq/*_1.fq.gz; do
 done 
 ```
 
-# Human contaminant removal
+## Human contaminant removal
 ```shell
 for FR in "$PROJECT_FOLDER"/data/filtered/*_1*.fq.gz; do
   RR=$(sed 's/_1/_2/' <<< "$FR")
@@ -41,24 +44,11 @@ for FR in "$PROJECT_FOLDER"/data/filtered/*_1*.fq.gz; do
     "$RR"
 done
 ```
-#
-```shell
-for F in "$PROJECT_FOLDER"/data/split_cleaned/*L2_1*.fq.gz; do
- S=$(echo $F|sed 's/_EKDN.*//')
- sbatch --mem=100M -p short "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_merge_fastq.sh $S 1 "$PROJECT_FOLDER"/data/cleaned
- sbatch --mem=100M -p short "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_merge_fastq.sh $S 2 "$PROJECT_FOLDER"/data/cleaned
-done 
-```
-
-# Assembly
+## Assembly
 
 ```shell
-mkdir $PROJECT_FOLDER/data/runfiles/assemble
-cd $PROJECT_FOLDER/data/runfiles/assemble
- 
-FILES=$PROJECT_FOLDER/data/cleaned
-R1=$(find "$FILES" -type f -name '*_1.fq.gz.filtered.nonhuman.fq.gz' | paste -sd, - )
-R2=$(sed 's/_1/_2/g' <<<$R1)
+mkdir $PROJECT_FOLDER/data/cluster/assemble
+cd $PROJECT_FOLDER/data/cluster/assemble
 
 sbatch \
   --mem=500G \
@@ -70,56 +60,75 @@ sbatch \
     64 \
 	"$PROJECT_FOLDER"/data/assembled
 ```
-	 
-### #Suggest filtering at min 2.5Kb contig length
+
+# MAG (prokaryote) pipeline
+
+This pipeline was built to produce a combined set of MAGs from soil derived from six assemblies of six apple orchards.
+
 ```shell
-seqkit seq -m 2500 $PROJECT_FOLDER/data/assembled/ASB/final.contigs.fa > $PROJECT_FOLDER/data/assembled/assemble.2.5kb.fa
+ORCHARD=CAS
 ```
 
-# Possibly split into eukaryote/prokaryote
-# first step is to run prodigal
+The assembly is likely to produce (especially for complex soils) a huge number of short <1Kb contigs. 
+For producing MAGs it is advisable to filter out shorter contigs - a suggested minimum size (enforced by later steps) is 2.5Kb
+
+## Filtering to min 2.5Kb contig length
 ```shell
-for d in "$PROJECT_FOLDER"/data/assembled/*; do
+mkdir -P $PROJECT_FOLDER/data/MAGs/filtered_assembly
+seqkit seq -m 2500 $PROJECT_FOLDER/data/assembled/$ORCHRD/final.contigs.fa > $PROJECT_FOLDER/data/MAGs/filtered_assembly/$ORCHARD/orchard.2.5kb.fa
+```
+
+The pipeline can only handle prokaryotic contigs (this is a limit of many of the chosen-best in class-tools. 
+TODO create eukaryote pipeline
+
+## Split contigs into eukaryote/prokaryote
+
+### Run prodigal
+```shell
+for d in "$PROJECT_FOLDER"/data/MAGs/filtered_assembly/*; do
   ASSEMBLY=$d/orchard.2.5kb.fa
   ORCHARD=$(basename $d)
   CORES=24
   sbatch --mem=60G -p long -c $CORES  "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_prodigal.sh \
     $ASSEMBLY \
-    "$PROJECT_FOLDER"/data/prodigal \
+    "$PROJECT_FOLDER"/data/MAGs/prodigal \
     $ORCHARD \
     $CORES
 done
  ```
 
-# second step is to run whokaryote
+### Run whokaryote
+
+whokaryote classifies each contig into prokaryote, eukaryote or unknown, and outputs as fasta file for each 
+
 ```shell
-for d in "$PROJECT_FOLDER"/data/assembled/*; do
+for d in "$PROJECT_FOLDER"/data/MAGs/filtered_assembly/*; do
   ASSEMBLY=$d/orchard.2.5kb.fa
   ORCHARD=$(basename $d)
   CORES=24
   sbatch --mem=60G -p long -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_whokaryote.sh \
     $ASSEMBLY \
-    "$PROJECT_FOLDER"/data/whokaryote \
-	"$PROJECT_FOLDER"/data/prodigal/$ORCHARD.prodigal.gff \
+    "$PROJECT_FOLDER"/data/MAGs/whokaryote \
+	"$PROJECT_FOLDER"/data/MAGs/prodigal/$ORCHARD.prodigal.gff \
     $ORCHARD \
 	2500 \
 	$CORES
 done
 ```
+
    
-# ~4% eukaryote reads
+## Prokaryote pipeline
 
-#### Prokaryote workflow
+### Align
 
-# Align
+Aligning using minimap - will need to index each of the prokaryote contig files
 
-# Using minimap - will need to index those orchrd files first
 ```shell
-minimap2 -x sr -d prokaryotes.mmi prokaryotes.fasta
+minimap2 -x sr -d "$PROJECT_FOLDER"/data/MAGs/whokaryote/$ORCHARD/prokaryotes.mmi "$PROJECT_FOLDER"/data/MAGs/whokaryote/$ORCHARD/prokaryotes.fasta
 ```
 
 ```shell
-for R1 in "$PROJECT_FOLDER"/data/cleaned/C[SD]*_1.cleaned.fastq.gz; do
+for R1 in "$PROJECT_FOLDER"/data/cleaned/*_1.cleaned.fastq.gz; do
  R2=$(sed 's/_1/_2/g' <<<$R1)
  S=$(basename $R1|sed 's/_1.*//')
  ORCHARD=$(sed 's/_.*//' <<<$S)
@@ -129,8 +138,8 @@ for R1 in "$PROJECT_FOLDER"/data/cleaned/C[SD]*_1.cleaned.fastq.gz; do
   -p long \
   -c 24 \
   "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_minimap2.sh \
-   $PROJECT_FOLDER/data/whokaryote/${ORCHARD}/prokaryotes.mmi \
-   "$PROJECT_FOLDER"/data/aligned \
+   $PROJECT_FOLDER/data/MAGs/whokaryote/${ORCHARD}/prokaryotes.mmi \
+   "$PROJECT_FOLDER"/data/MAGs/aligned \
    $R1 \
    $R2 \
    $S \
@@ -138,26 +147,15 @@ for R1 in "$PROJECT_FOLDER"/data/cleaned/C[SD]*_1.cleaned.fastq.gz; do
 done 
 ```
 
-# Make depth FILES
+### Make depth FILES
+
 ```shell
-INP=$(find $FILES -type f -name "ASP*.bam")
-jgi_summarize_bam_contig_depths --outputDepth ASP.depth.txt $INP
-
-INP=$(find $FILES -type f -name "CAS*.bam")
-jgi_summarize_bam_contig_depths --outputDepth CAS.depth.txt $INP
-
-INP=$(find $FILES -type f -name "C[DS]*.bam")
-jgi_summarize_bam_contig_depths --outputDepth CD.depth.txt $INP 
-
-INP=$(find $FILES -type f -name "HER*.bam")
-jgi_summarize_bam_contig_depths --outputDepth HER.depth.txt $INP
-
-INP=$(find $FILES -type f -name "MOR*.bam")
-jgi_summarize_bam_contig_depths --outputDepth MOR.depth.txt $INP
-
-INP=$(find $FILES -type f -name "ASB*.bam")
-jgi_summarize_bam_contig_depths --outputDepth ASB.depth.txt $INP
+INP=$(find $FILES -type f -name "${ORCHARD}*.bam")
+jgi_summarize_bam_contig_depths --outputDepth $ORCHARD.depth.txt $INP
 ```
+
+
+
 
 # BINNING
 
