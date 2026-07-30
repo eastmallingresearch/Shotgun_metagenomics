@@ -464,7 +464,7 @@ sbatch --mem=60G -p himem -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scri
   $CORES
 ```  
   
-####Taxonomy
+#### Taxonomy
 
 ```shell
 CORES=24
