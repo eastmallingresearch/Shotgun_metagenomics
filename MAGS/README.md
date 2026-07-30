@@ -1,3 +1,16 @@
+# Set up environment
+
+```shell
+PROJECT_FOLDER=~/projects/MYPROJECT
+ln -s ~/pipelines/metagenomics $PROJECT_FOLDER/metagenomics_pipeline
+
+mkdir $PROJECT_FOLDER/data
+mkdir $PROJECT_FOLDER/data/fastq
+mkdir $PROJECT_FOLDER/data/filtered
+mkdir $PROJECT_FOLDER/data/cluster
+
+```
+
 # Adapter removal and contaminant filtering
 ```shell
 for FR in $PROJECT_FOLDER/data/fastq/*_1.fq.gz; do
