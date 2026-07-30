@@ -5,14 +5,14 @@ use Set::IntervalTree;
 #use Parallel::ForkManager;
 
 ################################################################################
-#																																							 #
-# Counts feature overlaps between a gff file and headerless SAM input.				 #
-#																																							 #
-#	bam_scaffold_count.pl GFF_FILE [BEDTOOLS] < SAM_LINE			      						 #
-#																																							 #
-# IF BEDTOOLS = True, counts will be as per bedtools with features 					   #
+#																			   #																				 #
+# Counts feature overlaps between a gff file and headerless SAM input.		   #
+#																			   #																				 #
+#	bam_scaffold_count.pl GFF_FILE [BEDTOOLS] < SAM_LINE			      	   #
+#																			   #																				 #
+# IF BEDTOOLS = True, counts will be as per bedtools with features 			   #
 # overlapping forward and reverse reads counted twice. Default counts once.    #
-#																																							 #
+#																			   #																			 #
 ################################################################################
 
 # get command line variables (if set)
