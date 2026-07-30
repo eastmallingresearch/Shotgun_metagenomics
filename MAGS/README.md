@@ -403,13 +403,12 @@ sbatch --mem=60G -p long -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scrip
 ```
 
 The final set of MAGs are in dRep/drep_output/dereplicated_genomes.  
-
  
 #### Abundance
 
 ##### Build minimap index	
 
-First rename all the contigs per orchard to ensure they're unique (essential) and traceable (useful - maybe), otherwise, some of the downstream steps fail. Then concatenate them 
+First rename all the contigs per orchard to ensure they're unique (essential) and traceable (useful - maybe), otherwise some of the downstream steps fail. Then concatenate them 
 
 
 ```shell
@@ -445,8 +444,8 @@ for R1 in "$PROJECT_FOLDER"/data/cleaned/*_1.cleaned.fastq.gz; do
   -p long \
   -c 24 \
   "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_minimap2.sh \
-   "$PROJECT_FOLDER"/data/MAGs/binning/dRep/genome_catalog.mmi \
-   "$PROJECT_FOLDER"/data/MAGs/binning/bams \
+   "$PROJECT_FOLDER"/data/MAGs/dRep/genome_catalog.mmi \
+   "$PROJECT_FOLDER"/data/MAGs/mag_aligned \
    $R1 \
    $R2 \
    $S \
@@ -459,9 +458,9 @@ done
 ```shell
 CORES=24
 sbatch --mem=60G -p himem -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_coverm.sh \
-  "$PROJECT_FOLDER"/data/MAGs/binning/bams \
-  "$PROJECT_FOLDER"/data/MAGs/binning/dRep \
-  "$PROJECT_FOLDER"/data/MAGs/binning/abundance \
+  "$PROJECT_FOLDER"/data/MAGs/mag_aligned \
+  "$PROJECT_FOLDER"/data/MAGs/dRep \
+  "$PROJECT_FOLDER"/data/MAGs/abundance \
   $CORES
 ```  
   
@@ -470,8 +469,9 @@ sbatch --mem=60G -p himem -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scri
 ```shell
 CORES=24
 sbatch --mem=150G -p himem -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_gtdbtk.sh \
-  "$PROJECT_FOLDER"/data/MAGs \
-  "$PROJECT_FOLDER"/data/taxonomy/MAGs \
+  "$PROJECT_FOLDER"/data/MAGs/drep_output/dereplicated_genomes \
+  "$PROJECT_FOLDER"/data/MAGs/taxonomy \
   $CORES
 ```
-``
+
+
