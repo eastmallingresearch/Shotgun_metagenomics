@@ -250,8 +250,8 @@ for d in "$PROJECT_FOLDER"/data/MAGs/whokaryote/*; do
   sbatch --mem=60G -p long -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_MAGScot.sh \
     $ASSEMBLY \
     ~/apps/MAGScoT/ \
-	"$PROJECT_FOLDER"/data/MAGs/binning/${ORCHARD}.contigs_to_bin.tsv \
-	"$PROJECT_FOLDER"/data/MAGs/binning/MAGScot \
+	"$PROJECT_FOLDER"/data/MAGs/${ORCHARD}.contigs_to_bin.tsv \
+	"$PROJECT_FOLDER"/data/MAGs/MAGScot \
     $ORCHARD \
 	$CORES
 done
@@ -263,14 +263,14 @@ All of these steps are useful, but in a complex soil metagenome they may not wor
 
 ##### Checkm2
 ```shell
-for d in "$PROJECT_FOLDER"/data/MAGs/binning/MAGScot/*; do
+for d in "$PROJECT_FOLDER"/data/MAGs/MAGScot/*; do
   BINS=$d/bins
   ORCHARD=$(basename $d)
   CORES=24
   sbatch --mem=60G -p long -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_checkm2.sh \
     $BINS \
     ~/apps/checkm2/checkm2_db/CheckM2_database/uniref100.KO.1.dmnd \
-	"$PROJECT_FOLDER"/data/MAGs/binning/MAGScot \
+	"$PROJECT_FOLDER"/data/MAGs/MAGScot \
 	$ORCHARD \
 	$CORES
 done
@@ -281,9 +281,9 @@ Need to decide on what bins to retain based contamination and completeness
 Standard is duel filter, discard <50 complete and > 30% contamination  some simple R code could do this   
 But, this needs checking depending on the complexity of the the biome
 
-##### recover files (may need renaming..)
+##### Rename MAGScot bins
 ```shell
-for d in "$PROJECT_FOLDER"/data/MAGs/binning/MAGScot/*; do
+for d in "$PROJECT_FOLDER"/data/MAGs/MAGScot/*; do
   ORCHARD=$(basename $d)
   cd $ORCHARD/bins
   rename "s/^/${ORCHARD}_/" *.fa
@@ -291,18 +291,77 @@ for d in "$PROJECT_FOLDER"/data/MAGs/binning/MAGScot/*; do
  done
 ```
 
-##### filter and keep dodgy, but checkable (in R)
+#####  Rename checkm2 files
 
-TODO: fix the below script, it combines R and shell
+Also copies the per orchard files to the checkm2_files folder
+
+```shell
+for d in "$PROJECT_FOLDER"/data/MAGs/MAGScot/*; do
+  ORCHARD=$(basename $d)
+  cd $ORCHARD/checkm2
+	rename "s/^/${ORCHARD}_/" *.tsv
+  cd ../..
+ done
+
+mkdir "$PROJECT_FOLDER"/data/MAGs/MAGScot/checkm2_files
+  
+cd "$PROJECT_FOLDER"/data/MAGs/MAGScot/checkm2_files
+find "$PROJECT_FOLDER"/data/MAGs/MAGScot/ -type f -name *quality_report.tsv|xargs -I % cp % .
+
+sed -i -e 's/^[^N]/CAS_m/' ${ORCHARD}_quality_report.tsv
+
+```
+
+
+##### filter and keep good bins
+
+```shell
+mkdir -P "$PROJECT_FOLDER"/data/MAGs/MAGScot/combined/good
+mkdir "$PROJECT_FOLDER"/data/MAGs/MAGScot/combined/dodgy
+
+cd "$PROJECT_FOLDER"/data/MAGs/MAGScot
+R
+```
 
 ```R
-dodge <- dat[Contamination>10,]
-# MAG set
-dat <-dat[Contamination <=10,]
-dim(dat)
+library(data.table)
 
-mkdir "$PROJECT_FOLDER"/data/MAGs/binning/MAGScot/combined
-mkdir "$PROJECT_FOLDER"/data/MAGs/binning/MAGScot/dodgy
+# get checkm files
+files <- list.files(
+  path = "./checkm2_files",
+  pattern = ".*quality_report\\.tsv$",
+  recursive = TRUE,
+  full.names = TRUE
+)
+
+# load files
+qq <- lapply(files, fread)
+
+# name the list by  basename
+names(qq) <- basename(files)
+
+# add an "orchard" column to each data.table
+lapply(names(qq),function(i) qq[[i]][,orchard:=gsub("_.*","",i)])
+
+
+# combine checkm2 files
+dat <- rbindlist(qq)
+
+# select out dodgy bins1
+dodge <- dat[Contamination>10,]
+
+# select good bins
+good <-dat[Contamination <=10,]
+
+# how many bins in each category
+c(All=nrow(dat),Good=nrow(good),Dodgy=nrow(dodge))
+
+# copy files 
+file.copy(paste0(good$orchard,"/bins/",good$Names,".fa"),"combined/good/")
+file.copy(paste0(dodge$orchard,"/bins/",dodge$Names,".fa"),"combined/good/")
+
+# write out checkm2 combined good results
+fwrite(good,"combined_filtered_bins.txt")
 ```
 
 ##### GUNC filtering- checking (this is not so useful perhaps in complex soil metagenomes)
@@ -314,34 +373,20 @@ gunc download_db $APPS/gunc_db --db progenomes_2.1
 ```shell
 CORES=24
 sbatch --mem=60G -p long -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_GUNC.sh \
-    "$PROJECT_FOLDER"/data/MAGs/binning/combined/good \
+    "$PROJECT_FOLDER"/data/MAGs/MAGScot/combined/good \
     ~/apps/GUNC/gunc_db_progenomes2.1.dmnd \
-	"$PROJECT_FOLDER"/data/binning/combined/GUNC \
+	"$PROJECT_FOLDER"/data/MAGScot/combined/GUNC \
 	$CORES
 ```
 
-#### Dereplication with Drep	
+#### Dereplication with dRep	
 
-#####  rename bins in MAGScot folders
-
-```shell
-for d in "$PROJECT_FOLDER"/data/MAGs/binning/MAGScot/*; do
-  ORCHARD=$(basename $d)
-  cd $ORCHARD/checkm2
-	rename "s/^/${ORCHARD}_/" *.tsv
-  cd ../..
- done
-```
 
 ##### dRep pre-run steps
 
 ```shell
-mkdir "$PROJECT_FOLDER"/data/MAGs/binning/checkm2_files
-  
-cd "$PROJECT_FOLDER"/data/MAGs/binning/checkm2_files
-find "$PROJECT_FOLDER"/data/MAGs/binning/MAGScot/ -type f -name *quality_report.tsv|xargs -I % cp % .
 
-sed -i -e 's/^/CAS_/' ${ORCHARD}_quality_report.tsv
+cd "$PROJECT_FOLDER"/data/MAGs/MAGScot/checkm2_files
 
 echo "genome,completeness,contamination" > drep_genomeInfo.csv
 tail -n +2 *.tsv | awk -F'\t' '{print $1".fa,"$2","$3}' >> drep_genomeInfo.csv
@@ -351,32 +396,41 @@ tail -n +2 *.tsv | awk -F'\t' '{print $1".fa,"$2","$3}' >> drep_genomeInfo.csv
 ```shell
 CORES=24
 sbatch --mem=60G -p long -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_dRep.sh \
-  "$PROJECT_FOLDER"/data/binning/combined/good \
-  "$PROJECT_FOLDER"/data/binning/checkm2_files/drep_genomeInfo.csv \
-  "$PROJECT_FOLDER"/data/binning/dRep \
+  "$PROJECT_FOLDER"/data/MAGs/combined/good \
+  "$PROJECT_FOLDER"/data/MAGs/checkm2_files/drep_genomeInfo.csv \
+  "$PROJECT_FOLDER"/data/MAGs/dRep \
   $CORES
-```  
+```
 
+The final set of MAGs are in dRep/drep_output/dereplicated_genomes.  
+
+ 
 #### Abundance
 
 ##### Build minimap index	
 
-First to rename all the contigs per orchard to ensure they're unique (essential) and traceable (useful - maybe)
+First rename all the contigs per orchard to ensure they're unique (essential) and traceable (useful - maybe), otherwise, some of the downstream steps fail. Then concatenate them 
+
 
 ```shell
-cd "$PROJECT_FOLDER"/data/MAGs/binning/dRep/drep_output/dereplicated_genomes/
+# check unique
+cd "$PROJECT_FOLDER"/data/MAGs/dRep/drep_output/dereplicated_genomes/
 for f in *.fa; do
   ORCHARD=$(basename $f|sed 's/_.*//')
   sed -i -e "s/^>/>${ORCHARD}_/" $f
 done
 
-cat "$PROJECT_FOLDER"/data/MAGs/binning/dRep/drep_output/dereplicated_genomes/*.fa > "$PROJECT_FOLDER"/data/MAGs/binning/dRep/genome_catalog.fa  
+# cat MAGs
+cat "$PROJECT_FOLDER"/data/MAGs/dRep/drep_output/dereplicated_genomes/*.fa > "$PROJECT_FOLDER"/data/MAGs/dRep/genome_catalog.fa
+
+#useful to archive the MAGs, might as well do it now
+pigz -c "$PROJECT_FOLDER"/data/MAGs/dRep/genome_catalog.fa > "$PROJECT_FOLDER/data/MAGs/mags.tar.gz
 ```
 
 Run indexing
 
 ```shell
-minimap2 -x sr -I 10G -d "$PROJECT_FOLDER"/data/MAGs/binning/dRep/genome_catalog.mmi "$PROJECT_FOLDER"/data/MAGs/binning/dRep/genome_catalog.fa
+minimap2 -x sr -I 10G -d "$PROJECT_FOLDER"/data/MAGs/dRep/genome_catalog.mmi "$PROJECT_FOLDER"/data/MAGs/dRep/genome_catalog.fa
 ```
 
 ##### Map reads back to new index
