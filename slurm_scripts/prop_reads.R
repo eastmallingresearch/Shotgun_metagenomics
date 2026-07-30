@@ -1,3 +1,8 @@
+# set tidyverse to silent
+
+options(tidyverse.quiet = TRUE)
+
+# load libraries
 library(data.table)
 library(tidyverse)
 

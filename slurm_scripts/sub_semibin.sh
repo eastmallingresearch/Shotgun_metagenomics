@@ -1,15 +1,13 @@
 #!/bin/bash -l
-#SBATCH -J metabat
-#sBATCH --mem=40000
-#SBATCH -o metabat_"%j".out
+#SBATCH -J semibin
+#sBATCH --mem=60000
+#SBATCH -o semibin_"%j".out
 
 ASSEMBLY=$1;shift
-DEPTH=$1;shift
 SAMPLE=$1;shift
+BAMS=$1;shift
 OUT=$1;shift
-MINL=$1;shift
 CORES=$1;shift
-SEED="${1:-$RANDOM}"
 #BAMS=$1;shift
 
 
@@ -19,8 +17,18 @@ mkdir $TMPDIR/${SLURM_JOB_USER}_${SLURM_JOBID}
 # change to session temp folder
 cd $TMPDIR/${SLURM_JOB_USER}_${SLURM_JOBID}
 
-metabat2 -i $ASSEMBLY -a $DEPTH -m 2500 -t $CORES -o out.bin --seed $SEED --unbinned
 
+PIXI_PROJECT=$APPS/semibin2
+
+pixi run --manifest-path $PIXI_PROJECT/pixi.toml \
+SemiBin2 single_easy_bin \
+  -i $ASSEMBLY \
+  -b $BAMS \
+  -o semibin2.bin \
+  --sequencing-type short_read \
+  --engine gpu \
+  -t $CORES
+ 
 mkdir -p $OUT/$SAMPLE
 
 cp -r * $OUT/$SAMPLE/.
