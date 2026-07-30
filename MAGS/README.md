@@ -123,9 +123,13 @@ done
 
 Aligning using minimap - will need to index each of the prokaryote contig files
 
+#### Indexing
+
 ```shell
 minimap2 -x sr -d "$PROJECT_FOLDER"/data/MAGs/whokaryote/$ORCHARD/prokaryotes.mmi "$PROJECT_FOLDER"/data/MAGs/whokaryote/$ORCHARD/prokaryotes.fasta
 ```
+
+#### Run alignment
 
 ```shell
 for R1 in "$PROJECT_FOLDER"/data/cleaned/*_1.cleaned.fastq.gz; do
@@ -149,37 +153,36 @@ done
 
 ### Make depth FILES
 
+Need a single concatenated file for all samples in an assembly
+
 ```shell
-INP=$(find $FILES -type f -name "${ORCHARD}*.bam")
-jgi_summarize_bam_contig_depths --outputDepth $ORCHARD.depth.txt $INP
+INP=$(find $PROJECT_FOLDER/data/MAGs $FILES -type f -name "${ORCHARD}*.bam")
+jgi_summarize_bam_contig_depths --outputDepth $PROJECT_FOLDER/data/MAGs/depths/$ORCHARD.depth.txt $INP
 ```
 
+### BINNING
 
-
-
-# BINNING
-
-## metabat
+#### metabat
 
 ```shell
-for F in "$PROJECT_FOLDER"/data/depths/*.txt; do
+for F in "$PROJECT_FOLDER"/data/MAGs/depths/*.txt; do
  ORCHARD=$(basename $F|sed 's/\..*//')
  sbatch \
   --mem=36G \
   -p long \
   -c 16 \
   "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_metabat.sh \
-   $PROJECT_FOLDER/data/whokaryote/${ORCHARD}/prokaryotes.fasta \
+   $PROJECT_FOLDER/data/MAGs/whokaryote/${ORCHARD}/prokaryotes.fasta \
    $F \
    $ORCHARD \
-   $PROJECT_FOLDER/data/binning/metabat \
+   $PROJECT_FOLDER/data/MAGs/binning/metabat \
    2500 \
    16 \
    1288
 done 
 ```
 
-## Semibin
+#### Semibin
 ```shell
 for F in "$PROJECT_FOLDER"/data/depths/*.txt; do
   SAMPLE=$(basename $F .depth.txt)
@@ -192,19 +195,22 @@ for F in "$PROJECT_FOLDER"/data/depths/*.txt; do
     $PROJECT_FOLDER/data/whokaryote/$SAMPLE/prokaryotes.fasta \
     $SAMPLE \
     $PROJECT_FOLDER/data/aligned/${SAMPLE}'\*.sorted.bam' \
-    $PROJECT_FOLDER/data/binning/semibin \
+    $PROJECT_FOLDER/data/MAGs/binning/semibin \
     64
 done 
 ```
 
-## BIN REFINEMENT
-Most bin refiners discard fungal genomes - probably best to filter bins first into pro/eukaryote
 
-### MAGScot prokaryote refiners
-generate tsv files
+#### MAGScot prokaryote bin refiner
+
+Most bin refiners discard fungal genomes - hence why we split earlier
+TODO: find refiner which can handle eukaryote bins
+
+
+##### Generate metabat tsv files
 
 ```shell
-for d in $PROJECT_FOLDER/data/binning/metabat/*; do
+for d in $PROJECT_FOLDER/data/MAGs/binning/metabat/*; do
   for f in $d/*.fa; do
     bin=$(basename "$f" .fa)
     grep ">" "$f" | sed 's/^>//' | awk -v b="$bin" '{print b"\t"$1"\tmetabat2"}'
@@ -212,8 +218,10 @@ for d in $PROJECT_FOLDER/data/binning/metabat/*; do
 done
 ```
 
+##### semibin tsv files
+
 ```shell
-for d in $PROJECT_FOLDER/data/binning/semibin/*; do
+for d in $PROJECT_FOLDER/data/MAGs/binning/semibin/*; do
   for f in $d/semibin2.bin/output_bins/*.fa.gz; do
     bin=$(basename "$f" .fa.gz)
     zcat "$f" | grep ">" | sed 's/^>//' | awk -v b="$bin" '{print b"\t"$1"\tsemibin2"}'
@@ -221,68 +229,61 @@ for d in $PROJECT_FOLDER/data/binning/semibin/*; do
 done
 ```
 
-```shell
-cd $PROJECT_FOLDER/data/binning
-```
+##### concatenate tsv files per orchard
 
 ```shell
-for d in $PROJECT_FOLDER/data/binning/semibin/*tsv; do
+cd $PROJECT_FOLDER/data/MAGs/binning
+for d in $PROJECT_FOLDER/data/MAGs/binning/semibin/*tsv; do
   s=$(sed 's/semibin/metabat/g' <<<$d) 
   o=$(basename "$d" .semibin2.contigs_to_bin.tsv)
   cat $d $s > $o.contigs_to_bin.tsv
 done
 ```
 
-```shell
-pixi run --manifest-path ~/envs/magscot/pixi.toml \
-  Rscript $MAGScoT_folder/MAGScoT.R \
-  -i orchard1.contigs_to_bin.tsv \
-  --hmm orchard1.hmm \
-  -o orchard1_magscot \
-  -p bac120+ar53 \
-  --min_markers 25 \
-  --min_sharing 0.8
-```
+#### Run MAGScot
 
 ```shell
-for d in "$PROJECT_FOLDER"/data/whokaryote/*; do
+for d in "$PROJECT_FOLDER"/data/MAGs/whokaryote/*; do
   ASSEMBLY=$d/prokaryotes.fasta
   ORCHARD=$(basename $d)
   CORES=24
   sbatch --mem=60G -p long -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_MAGScot.sh \
     $ASSEMBLY \
     ~/apps/MAGScoT/ \
-	"$PROJECT_FOLDER"/data/binning/${ORCHARD}.contigs_to_bin.tsv \
-	"$PROJECT_FOLDER"/data/binning/MAGScot \
+	"$PROJECT_FOLDER"/data/MAGs/binning/${ORCHARD}.contigs_to_bin.tsv \
+	"$PROJECT_FOLDER"/data/MAGs/binning/MAGScot \
     $ORCHARD \
 	$CORES
 done
 ```
 
-### Bin checking (checkm2)
+#### Bin checking and filtering
 
+All of these steps are useful, but in a complex soil metagenome they may not work as intended.  
+
+##### Checkm2
 ```shell
-for d in "$PROJECT_FOLDER"/data/binning/MAGScot/*; do
+for d in "$PROJECT_FOLDER"/data/MAGs/binning/MAGScot/*; do
   BINS=$d/bins
   ORCHARD=$(basename $d)
   CORES=24
   sbatch --mem=60G -p long -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_checkm2.sh \
     $BINS \
     ~/apps/checkm2/checkm2_db/CheckM2_database/uniref100.KO.1.dmnd \
-	"$PROJECT_FOLDER"/data/binning/MAGScot \
+	"$PROJECT_FOLDER"/data/MAGs/binning/MAGScot \
 	$ORCHARD \
 	$CORES
 done
 ```
 
-extract combined bin set
-need to decide on what bins to retain based contamination and completeness
-duel filter, discard <50 complete and > 30% contamination
-some simple R code is probably best
+Extract combined bin set
+Need to decide on what bins to retain based contamination and completeness  
+Standard is duel filter, discard <50 complete and > 30% contamination  some simple R code could do this   
+But, this needs checking depending on the complexity of the the biome
 
-### recover files (may need renaming..)
+##### recover files (may need renaming..)
 ```shell
-for d in "$PROJECT_FOLDER"/data/binning/MAGScot/*; do
+for d in "$PROJECT_FOLDER"/data/MAGs/binning/MAGScot/*; do
   ORCHARD=$(basename $d)
   cd $ORCHARD/bins
   rename "s/^/${ORCHARD}_/" *.fa
@@ -290,7 +291,9 @@ for d in "$PROJECT_FOLDER"/data/binning/MAGScot/*; do
  done
 ```
 
-#### filter and keep dodgy, but checkable (in R)
+##### filter and keep dodgy, but checkable (in R)
+
+TODO: fix the below script, it combines R and shell
 
 ```R
 dodge <- dat[Contamination>10,]
@@ -298,11 +301,12 @@ dodge <- dat[Contamination>10,]
 dat <-dat[Contamination <=10,]
 dim(dat)
 
-mkdir "$PROJECT_FOLDER"/data/binning/MAGScot/combined
-mkdir "$PROJECT_FOLDER"/data/binning/MAGScot/dodgy
+mkdir "$PROJECT_FOLDER"/data/MAGs/binning/MAGScot/combined
+mkdir "$PROJECT_FOLDER"/data/MAGs/binning/MAGScot/dodgy
 ```
 
-### GUNC
+##### GUNC filtering- checking (this is not so useful perhaps in complex soil metagenomes)
+
 ```shell
 gunc download_db $APPS/gunc_db --db progenomes_2.1
 ```
@@ -310,8 +314,110 @@ gunc download_db $APPS/gunc_db --db progenomes_2.1
 ```shell
 CORES=24
 sbatch --mem=60G -p long -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_GUNC.sh \
-    "$PROJECT_FOLDER"/data/binning/combined/good \
+    "$PROJECT_FOLDER"/data/MAGs/binning/combined/good \
     ~/apps/GUNC/gunc_db_progenomes2.1.dmnd \
-```
 	"$PROJECT_FOLDER"/data/binning/combined/GUNC \
 	$CORES
+```
+
+#### Dereplication with Drep	
+
+#####  rename bins in MAGScot folders
+
+```shell
+for d in "$PROJECT_FOLDER"/data/MAGs/binning/MAGScot/*; do
+  ORCHARD=$(basename $d)
+  cd $ORCHARD/checkm2
+	rename "s/^/${ORCHARD}_/" *.tsv
+  cd ../..
+ done
+```
+
+##### dRep pre-run steps
+
+```shell
+mkdir "$PROJECT_FOLDER"/data/MAGs/binning/checkm2_files
+  
+cd "$PROJECT_FOLDER"/data/MAGs/binning/checkm2_files
+find "$PROJECT_FOLDER"/data/MAGs/binning/MAGScot/ -type f -name *quality_report.tsv|xargs -I % cp % .
+
+sed -i -e 's/^/CAS_/' ${ORCHARD}_quality_report.tsv
+
+echo "genome,completeness,contamination" > drep_genomeInfo.csv
+tail -n +2 *.tsv | awk -F'\t' '{print $1".fa,"$2","$3}' >> drep_genomeInfo.csv
+```
+
+##### Run dRep
+```shell
+CORES=24
+sbatch --mem=60G -p long -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_dRep.sh \
+  "$PROJECT_FOLDER"/data/binning/combined/good \
+  "$PROJECT_FOLDER"/data/binning/checkm2_files/drep_genomeInfo.csv \
+  "$PROJECT_FOLDER"/data/binning/dRep \
+  $CORES
+```  
+
+#### Abundance
+
+##### Build minimap index	
+
+First to rename all the contigs per orchard to ensure they're unique (essential) and traceable (useful - maybe)
+
+```shell
+cd "$PROJECT_FOLDER"/data/MAGs/binning/dRep/drep_output/dereplicated_genomes/
+for f in *.fa; do
+  ORCHARD=$(basename $f|sed 's/_.*//')
+  sed -i -e "s/^>/>${ORCHARD}_/" $f
+done
+
+cat "$PROJECT_FOLDER"/data/MAGs/binning/dRep/drep_output/dereplicated_genomes/*.fa > "$PROJECT_FOLDER"/data/MAGs/binning/dRep/genome_catalog.fa  
+```
+
+Run indexing
+
+```shell
+minimap2 -x sr -I 10G -d "$PROJECT_FOLDER"/data/MAGs/binning/dRep/genome_catalog.mmi "$PROJECT_FOLDER"/data/MAGs/binning/dRep/genome_catalog.fa
+```
+
+##### Map reads back to new index
+```shell
+for R1 in "$PROJECT_FOLDER"/data/cleaned/*_1.cleaned.fastq.gz; do
+ R2=$(sed 's/_1/_2/g' <<<$R1)
+ S=$(basename $R1|sed 's/_1.*//')
+ ORCHARD=$(sed 's/_.*//' <<<$S)
+ ORCHARD=$(sed 's/CS/CD/' <<<$ORCHARD)
+ sbatch \
+  --mem=60G \
+  -p long \
+  -c 24 \
+  "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_minimap2.sh \
+   "$PROJECT_FOLDER"/data/MAGs/binning/dRep/genome_catalog.mmi \
+   "$PROJECT_FOLDER"/data/MAGs/binning/bams \
+   $R1 \
+   $R2 \
+   $S \
+   24
+done 
+```
+
+##### Calculate coverage
+
+```shell
+CORES=24
+sbatch --mem=60G -p himem -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_coverm.sh \
+  "$PROJECT_FOLDER"/data/MAGs/binning/bams \
+  "$PROJECT_FOLDER"/data/MAGs/binning/dRep \
+  "$PROJECT_FOLDER"/data/MAGs/binning/abundance \
+  $CORES
+```  
+  
+####Taxonomy
+
+```shell
+CORES=24
+sbatch --mem=150G -p himem -c $CORES "$PROJECT_FOLDER"/metagenomics_pipeline/scripts/sub_gtdbtk.sh \
+  "$PROJECT_FOLDER"/data/MAGs \
+  "$PROJECT_FOLDER"/data/taxonomy/MAGs \
+  $CORES
+```
+``
