@@ -1,6 +1,6 @@
-# Functional analysis and taxonomy 
+# Functional analysis and taxonomy  
 
-The are now quite a few options in this space, Megan +DIAMOND, MetaLAFFA (uses Diamond), SqueezeMeta, Humann3.
+The are now quite a few options in this space, Megan +DIAMOND, MetaLAFFA (this is unsuitable, it's a complete pipeline - what it does might be useful, but all the additional overhead it adds is exceedingly bothersome), SqueezeMeta, Humann3.
   
 However none of them seem more suited than using the output from Kaiju (which is orders of magnitude faster than DIAMOND - there's MMseqs2 which might be a good replacement).
   
