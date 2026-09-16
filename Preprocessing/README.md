@@ -1,5 +1,5 @@
 ## Preprocessing
-The workflow should include at the least adapter trimming and filtering for phix/contamination. Normalisation, error correction and merging are dependent on the data and/or the assebley pipeline. Trimmomatic can also trim for quality if the data is of poor quality.
+The workflow should include at the least adapter trimming and filtering for phix/contamination. Normalisation, error correction and merging are dependent on the data and/or workflow - I haven't found a workflow where they're any use!
 
 The bbtools preprocessing pipeline has a number of good options for many of these tasks.
 
